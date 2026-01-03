@@ -1,17 +1,18 @@
 <script setup>
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import SuperTable from "./Table.vue";
-
+import { del, post, put } from "../request.js";
+const tableRef = ref(null);
 // 表格加载状态
 const loading = ref(false);
-
+const rowKeyName = "id"; // 行唯一标识字段名
 // 示例数据
 const tableData = ref([
   {
-    key: "1",
+    id: "1",
     name: "Jane Doe",
     department: "技术部",
     salary: 23000,
@@ -21,7 +22,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "2",
+    id: "2",
     name: "Alisa Ross",
     department: "销售部",
     salary: 25000,
@@ -31,7 +32,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "3",
+    id: "3",
     name: "Kevin Sandra",
     department: "技术部",
     salary: 22000,
@@ -41,7 +42,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "4",
+    id: "4",
     name: "Ed Hellen",
     department: "人力资源",
     salary: 17000,
@@ -51,7 +52,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "5",
+    id: "5",
     name: "William Smith",
     department: "财务部",
     salary: 27000,
@@ -61,7 +62,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "6",
+    id: "6",
     name: "Emma Johnson",
     department: "市场部",
     salary: 26000,
@@ -71,7 +72,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "7",
+    id: "7",
     name: "Michael Brown",
     department: "技术部",
     salary: 28000,
@@ -81,7 +82,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "8",
+    id: "8",
     name: "Sarah Davis",
     department: "销售部",
     salary: 24000,
@@ -91,7 +92,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "9",
+    id: "9",
     name: "David Wilson",
     department: "技术部",
     salary: 29000,
@@ -101,7 +102,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "10",
+    id: "10",
     name: "Lisa Anderson",
     department: "人力资源",
     salary: 21000,
@@ -111,7 +112,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "11",
+    id: "11",
     name: "Tom Harris",
     department: "财务部",
     salary: 25000,
@@ -121,7 +122,7 @@ const tableData = ref([
     orderDetails: [],
   },
   {
-    key: "12",
+    id: "12",
     name: "Rachel White",
     department: "市场部",
     salary: 23000,
@@ -258,7 +259,7 @@ const tableConfig = reactive({
         type: "table", // 表格类型
         creatable: true, // 新增时显示
         editable: true, // 编辑时显示
-        required: true,
+        required: false, // 是否必填
         tableConfig: {
           // 表格配置
           columns: [
@@ -318,7 +319,7 @@ const tableConfig = reactive({
                 creatable: true,
                 editable: true,
                 required: true,
-                placeholder: "请输入姓名",
+                placeholder: "请输入合计",
                 attrs: {
                   "max-length": 50,
                 },
@@ -349,9 +350,6 @@ const tableConfig = reactive({
               message: "删除成功",
               apiUrl: "/api/employee/delete",
               params: (records) => ({ ids: records.map((r) => r.key) }),
-              callback: (records) => {
-                console.log("删除:", records);
-              },
             },
           ],
 
@@ -444,11 +442,17 @@ const tableConfig = reactive({
 
   // 分页类型：frontend（前端分页）或 backend（后端分页）
   paginationType: "frontend",
-  pageSize: 5,
+  pageSize: 10,
   pageSizeOptions: [5, 10, 20, 50],
 
   // 后端分页配置（如果使用后端分页）
-  apiUrl: "/api/employee/list",
+  apiUrl: "/pd/employees/pageQueryEmployees",
+
+  // 后端表单新增接口地址
+  formAddApiUrl: "/pd/employees/saveEmployees",
+
+  // 后端表单更新的接口地址
+  formUpdateApiUrl: "/pd/employees/updateEmployees",
 
   // 操作按钮配置
   actions: [
@@ -457,15 +461,13 @@ const tableConfig = reactive({
       label: "查看",
       icon: "eye",
       message: "查看成功",
-      callback: (records) => {
-        console.log("查看:", records);
-      },
+      // 查看操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
     {
       key: "edit",
       label: "编辑",
       icon: "edit",
-      // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息
+      // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
     {
       key: "delete",
@@ -474,14 +476,120 @@ const tableConfig = reactive({
       type: "confirm",
       confirmMessage: "确定要删除选中的数据吗？",
       message: "删除成功",
-      apiUrl: "/api/employee/delete",
-      params: (records) => ({ ids: records.map((r) => r.key) }),
-      callback: (records) => {
-        console.log("删除:", records);
-      },
+      apiUrl: "/pd/employees/deleteEmployees",
+      params: (records) => records?.map((r) => r[rowKeyName])?.join(",") ?? [],
     },
   ],
-
+  // 执行操作按钮的回调 edit 和 view 不会进入这个回调 因为它们是弹窗形式的操作
+  executeAction: async (action, records, params) => {
+    // records: 为选中的数据数组
+    // action: 为当前这个操作对应的action对象
+    // params: action params 方法 处理过后的参数
+    if (action.key == "delete") {
+      if (tableConfig.paginationType === "frontend") {
+        // 前端分页 删除逻辑
+        records.forEach((record) => {
+          const index = tableData.value.findIndex(
+            (item) => item[rowKeyName] === record[rowKeyName]
+          );
+          if (index !== -1) {
+            tableData.value.splice(index, 1);
+          }
+        });
+      } else {
+        // 后端分页 删除逻辑
+        await del(action.apiUrl + "/" + params);
+      }
+    }
+  },
+  // API 请求（后端分页）
+  pageFetchData: async (url, params) => {
+    // url 为 apiUrl
+    // params 为分页和搜索参数对象
+    /**
+      params 结构示例
+      {
+        pageNo: 1,
+        pageSize: 10,
+        searchValues: [{name:'value'}]
+      }
+     */
+    console.log("后端分页请求参数:", params);
+    let keys = [];
+    Object.keys(params?.searchValues).forEach((key) => {
+      if (
+        params.searchValues[key] === null ||
+        params.searchValues[key] === undefined ||
+        params.searchValues[key] === ""
+      ) {
+        delete params.searchValues[key];
+      } else {
+        keys.push([key, "eq", params.searchValues[key]]);
+      }
+    });
+    return post(url, {
+      pageQuery: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchKey: "",
+        keys: keys,
+      },
+    });
+  },
+  // 表单提交事件 - 处理新增和编辑逻辑
+  handleFormSubmit: async ({ config, mode, data, record }) => {
+    // config 是这个tableConfig的对象
+    // mode 是新增还是编辑或者是其他的 create:新增 edit:编辑
+    // data 是表单提交的数据
+    // record 是当前编辑的行数据，新增时为 null
+    if (mode === "create") {
+      // 新增逻辑：调用后端 API 创建数据
+      console.log("新增数据:", data);
+      if (config.paginationType === "frontend") {
+        tableData.value.push({
+          [config?.rowKey || "key"]: String(Date.now() + Math.random()),
+          ...data,
+        });
+      } else {
+        await post(config.formAddApiUrl, {
+          employeesDtos: [data],
+        });
+      }
+      Message.success("新增成功");
+    } else if (mode === "edit") {
+      // 编辑逻辑：调用后端 API 更新数据
+      console.log("编辑数据:", data);
+      if (config.paginationType === "frontend") {
+        const index = tableData.value.findIndex(
+          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+        );
+        if (index !== -1) {
+          tableData.value[index] = {
+            ...tableData.value[index],
+            ...data,
+          };
+        }
+      } else {
+        await put(config.formUpdateApiUrl, {
+          employeesDtos: [data],
+        });
+      }
+      Message.success("编辑成功");
+    }
+  },
+  // 搜索条件变更
+  handleSearch: (searchValues) => {
+    console.log("搜索条件:", searchValues);
+    Message.info(`搜索条件: ${JSON.stringify(searchValues)}`);
+  },
+  // 分页变化
+  handlePageChange: (pagination) => {
+    console.log("分页信息:", pagination);
+  },
+  // 列配置变化
+  handleColumnConfigChange: (config) => {
+    console.log("列配置变化", config);
+  },
   // 是否显示列配置按钮
   showColumnConfig: true,
 
@@ -492,7 +600,7 @@ const tableConfig = reactive({
   tableSize: "small",
 
   // 滚动配置
-  scroll: { x: 1200, y: "100%" },
+  scroll: { x: 1200, y: "auto" },
 
   // 是否显示选择列
   selection: true,
@@ -504,93 +612,18 @@ const tableConfig = reactive({
   stripe: true, // 斑马纹背景
 
   // 行唯一标识字段名
-  rowKey: "key", // 对应数据中的唯一标识字段，默认值为 'key'
+  rowKey: rowKeyName, // 对应数据中的唯一标识字段，默认值为 'key'
 });
 
 const selectedKeys = ref([]);
+
 // 事件处理
-
-/**
- * 操作按钮点击
- */
-const handleActionClick = (data) => {
-  const { actionKey, records, callback, apiUrl, params } = data;
-
-  console.log("操作点击:", { actionKey, records, apiUrl });
-
-  if (callback && typeof callback === "function") {
-    callback(records);
+watch(
+  () => selectedKeys.value,
+  (newVal) => {
+    console.log("选中行Key:", newVal);
   }
-
-  // 如果有 API 地址，可以在这里发送请求
-  if (apiUrl) {
-    simulateApiRequest(apiUrl, params, records);
-  }
-};
-
-/**
- * 搜索事件
- */
-const handleSearch = (searchValues) => {
-  console.log("搜索条件:", searchValues);
-  Message.info(`搜索条件: ${JSON.stringify(searchValues)}`);
-};
-
-/**
- * 分页变化
- */
-const handlePageChange = (pagination) => {
-  console.log("分页信息:", pagination);
-};
-
-/**
- * 列配置变化
- */
-const handleColumnConfigChange = (config) => {
-  console.log("列配置已改变:", config);
-};
-
-/** * 表单提交
- */
-const handleFormSubmit = (data) => {
-  console.log("表单提交:", data);
-
-  if (data.mode === "create") {
-    // 新增逻辑：调用后端 API 创建数据
-    console.log("新增数据:", data.data);
-    Message.success("新增成功");
-    // tableData.value.push({ ...data.data, key: String(tableData.value.length + 1) });
-  } else {
-    // 编辑逻辑：调用后端 API 更新数据
-    console.log("编辑数据:", data.data);
-    const index = tableData.value.findIndex((item) => item.key === data.data.key);
-    if (index !== -1) {
-      tableData.value[index] = { ...tableData.value[index], ...data.data };
-    }
-    Message.success("编辑成功");
-  }
-};
-
-/** * API 请求（后端分页）
- */
-const handleApiRequest = async (params) => {
-  console.log("后端分页请求参数:", params);
-  // 这里可以发送真实的 API 请求
-  // const response = await fetch('/api/employee/list', { body: JSON.stringify(params) })
-};
-
-/**
- * 模拟 API 请求
- */
-const simulateApiRequest = (apiUrl, paramsFunc, records) => {
-  loading.value = true;
-  setTimeout(() => {
-    const params = typeof paramsFunc === "function" ? paramsFunc(records) : paramsFunc;
-    console.log("API 请求:", { apiUrl, params });
-    Message.success(`已发送请求到 ${apiUrl}`);
-    loading.value = false;
-  }, 500);
-};
+);
 
 /**
  * 切换分页类型（演示）
@@ -600,6 +633,19 @@ const paginationType = ref("frontend");
 const switchPaginationType = () => {
   paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
   tableConfig.paginationType = paginationType.value;
+  if (tableConfig.paginationType === "backend") {
+    // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
+    tableData.value = [];
+    selectedKeys.value = [];
+    console.log("tableRef.value", tableRef.value);
+
+    if (tableRef.value) {
+      // 触发表格重新加载数据
+      tableRef.value.fetchData && tableRef.value.fetchData();
+    }
+  } else {
+    window.location.reload();
+  }
   Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
 };
 const textareaValue = computed(() => {
@@ -610,19 +656,19 @@ const textareaValue = computed(() => {
 <template>
   <div style="display: flex; justify-content: space-between">
     <div class="example-container">
-      <h1>基于Acro的超级表格组件示例</h1>
+      <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px">
+        基于Acro的超级表格组件示例
+        <a-button type="outline" size="large" @click="switchPaginationType"
+          >切换分页模式（当前：{{ paginationType }}）</a-button
+        >
+      </h1>
       <!-- 使用通用表格组件 -->
       <SuperTable
+        :ref="(ref) => (tableRef = ref)"
         :config="tableConfig"
-        :data="tableData"
+        v-model:data="tableData"
         :loading="loading"
         v-model:selectedKeys="selectedKeys"
-        @action-click="handleActionClick"
-        @search="handleSearch"
-        @page-change="handlePageChange"
-        @column-config-change="handleColumnConfigChange"
-        @form-submit="handleFormSubmit"
-        @api-request="handleApiRequest"
       >
         <template #toolbar>
           <a-button type="secondary"> 导出 Excel </a-button>

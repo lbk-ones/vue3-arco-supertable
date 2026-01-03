@@ -59,13 +59,14 @@ const props = defineProps({
 
 // Emits 定义
 const emit = defineEmits([
-  "action-click", // 操作按钮点击
-  "search", // 搜索事件
-  "page-change", // 分页变化
-  "column-config-change", // 列配置变化
-  "api-request", // API 请求（后端分页）
-  "form-submit", // 表单提交
+  // "action-click", // 操作按钮点击
+  // "search", // 搜索事件
+  //"page-change", // 分页变化
+  //"column-config-change", // 列配置变化
+  // "api-request", // API 请求（后端分页）
+  // "form-submit", // 表单提交
   "update:selectedKeys", // 选中行变化
+  "update:data", // 表格数据集合变化
 ]);
 
 // 状态管理
@@ -76,7 +77,7 @@ const state = reactive({
   pageSize: props.config.pageSize || 10,
   columnConfig: [], // 当前列配置
   totalCount: 0, // 总数据条数
-  apiData: [], // API 返回的数据
+  //apiData: [], // API 返回的数据
   visibleColumnModal: false, // 列配置弹窗
   columnOrder: [], // 列顺序
   columnVisibility: {}, // 列显示状态
@@ -123,7 +124,7 @@ const visibleColumns = computed(() => {
 // 获取表格数据
 const tableData = computed(() => {
   if (props.config.paginationType === "backend") {
-    return state.apiData;
+    return props.data || [];
   } else {
     // 前端分页
     const filtered = getFilteredData();
@@ -211,7 +212,7 @@ const handleSearch = () => {
   if (props.config.paginationType === "backend") {
     fetchData();
   }
-  emit("search", state.searchValues);
+  props.config?.handlerSearch?.(state.searchValues);
 };
 
 // 重置搜索
@@ -226,13 +227,16 @@ const handleResetSearch = () => {
 // 获取后端数据
 const fetchData = async () => {
   if (props.config.paginationType !== "backend" || !props.config.apiUrl) return;
-
   try {
-    emit("api-request", {
-      page: state.currentPage,
+    let data = await props.config?.pageFetchData?.(props.config.apiUrl, {
+      pageNo: state.currentPage,
       pageSize: state.pageSize,
       searchValues: state.searchValues,
     });
+    let records = data?.records || [];
+    emit("update:data", records);
+    //state.apiData = records || [];
+    state.totalCount = parseInt(data?.total || 0);
   } catch (error) {
     Message.error("数据加载失败");
   }
@@ -244,7 +248,7 @@ const handlePageChange = (page) => {
   if (props.config.paginationType === "backend") {
     fetchData();
   }
-  emit("page-change", { page, pageSize: state.pageSize });
+  props.config?.handlePageChange?.({ page, pageSize: state.pageSize });
 };
 
 const handlePageSizeChange = (pageSize) => {
@@ -253,7 +257,7 @@ const handlePageSizeChange = (pageSize) => {
   if (props.config.paginationType === "backend") {
     fetchData();
   }
-  emit("page-change", { page: 1, pageSize });
+  props.config?.handlePageChange?.({ page, pageSize: state.pageSize });
 };
 
 // 行选择
@@ -268,29 +272,27 @@ const getKeyName = () => {
 
 // 行点击事件
 const handleRowClick = (record) => {
-  const key = String(record[getKeyName()]);
-  const index = props.selectedKeys.indexOf(key);
+  const key = record[getKeyName()];
+  let selectKeys = [...props.selectedKeys];
+  const index = selectKeys.findIndex((e) => e === key);
 
   if (index > -1) {
     // 如果已选中，则取消选中
-    props.selectedKeys.splice(index, 1);
+    selectKeys.splice(index, 1);
   } else {
     // 如果未选中，则添加到选中列表
-    props.selectedKeys.push(key);
+    selectKeys.push(key);
   }
+  emit("update:selectedKeys", selectKeys);
 };
 
 // 操作按钮点击（传递选中的行数组）
 const handleActionClick = (action) => {
-  console.log("handleActionClick", action);
-  console.log("props.selectedKeys", props.selectedKeys);
-
   // 获取选中行对应的记录 - 从完整数据中查找
-  const sourceData =
-    props.config.paginationType === "backend" ? state.apiData : props.data;
+  const sourceData = props.data;
 
   const selectedRecords = props.selectedKeys
-    .map((key) => sourceData.find((item) => String(item[getKeyName()]) === String(key)))
+    .map((key) => sourceData.find((item) => item[getKeyName()] === key))
     .filter(Boolean);
 
   if (selectedRecords.length === 0) {
@@ -338,24 +340,29 @@ const handleActionClick = (action) => {
     executeAction(action, selectedRecords);
   }
 };
-
-const executeAction = (action, records) => {
-  emit("action-click", {
-    actionKey: action.key,
-    records, // 传递数组
-    callback: action.callback,
-    apiUrl: action.apiUrl,
-    params: action.params,
-  });
-  emit("update:selectedKeys", []);
-  if (action.message) {
-    Message.success(action.message);
+// 执行callback回调
+const executeAction = async (action, records) => {
+  if (props.config.executeAction) {
+    let params = action.params && action.params(records);
+    await props.config.executeAction(action, records, params);
+    await fetchData();
+    // emit("action-click", {
+    //   actionKey: action.key,
+    //   records, // 传递数组
+    //   callback: action.callback,
+    //   apiUrl: action.apiUrl,
+    //   params: action.params,
+    // });
+    emit("update:selectedKeys", []);
+    if (action.message) {
+      Message.success(action.message);
+    }
   }
 };
 
 // 列配置弹窗
 const handleColumnConfigChange = () => {
-  emit("column-config-change", {
+  props.config?.handleColumnConfigChange?.({
     visibility: state.columnVisibility,
     order: state.columnOrder,
   });
@@ -421,6 +428,7 @@ watch(
 // 初始化
 onMounted(() => {
   initializeColumns();
+  fetchData();
 });
 // 打开新增表单
 const openCreateForm = () => {
@@ -464,11 +472,22 @@ const selectRecord = (record) => {
 
 // 处理表单提交
 const handleFormSubmit = async (formData) => {
-  emit("form-submit", {
-    mode: formData.mode,
-    data: formData.data,
-    record: formData.record,
-  });
+  if (props?.config?.handleFormSubmit) {
+    await props.config.handleFormSubmit({
+      config: JSON.parse(JSON.stringify(props.config)),
+      mode: formData.mode,
+      data: formData.data,
+      record: formData.record,
+    });
+    await fetchData();
+    return;
+  }
+  // emit("form-submit", {
+  //   config: JSON.parse(JSON.stringify(props.config)),
+  //   mode: formData.mode,
+  //   data: formData.data,
+  //   record: formData.record,
+  // });
 };
 
 // 表单提交成功
@@ -485,6 +504,10 @@ const handleFormSuccess = (data) => {
 const formModalChangeVisible = (val) => {
   state.formVisible = val;
 };
+
+defineExpose({
+  fetchData,
+});
 </script>
 
 <template>
@@ -876,6 +899,7 @@ const formModalChangeVisible = (val) => {
       formLayout="horizontal"
       :record="state.formRecord"
       :columns="config.columns"
+      :config="config"
       :selected-keys="props.selectedKeys"
       @update:visible="formModalChangeVisible"
       @update:selected-keys="(val) => emit('update:selectedKeys', val)"

@@ -60,6 +60,34 @@ const clearSelectedKeys = () => {
     formSelectedKeys[props.field.dataIndex] = [];
   }
 };
+
+// 表单提交事件 - 处理新增和编辑逻辑
+const handleFormSubmit = async ({ config, mode, data, record }) => {
+  // config 是这个tableConfig的对象
+  // mode 是新增还是编辑或者是其他的
+  // data 是表单提交的数据
+  // record 是当前编辑的行数据，新增时为 null
+  if (mode == "create") {
+    let datas = props.formData[props.field.dataIndex];
+    datas.push({
+      ...data,
+      _rowIndex: datas.length,
+      [props.field.form.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
+    });
+    handleUpdate(datas);
+  } else if (mode == "edit") {
+    let datas = props.formData[props.field.dataIndex];
+    const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
+    if (index !== -1) {
+      datas[index] = {
+        ...datas[index],
+        ...data,
+      };
+      handleUpdate(datas);
+    }
+  }
+};
+
 defineExpose({
   clearSelectedKeys,
 });
@@ -289,7 +317,17 @@ defineExpose({
     <SuperTable
       :isFormItem="true"
       :table-disabled="isFieldDisabled(field)"
-      :config="field.form?.tableConfig ?? {}"
+      :config="{
+        ...(field.form?.tableConfig ?? {}),
+        handleFormSubmit: handleFormSubmit,
+        executeAction: async (action, records, params) => {
+          if (action.key == 'delete') {
+            let datas = formData[field.dataIndex];
+            datas.splice(records._rowIndex, 1);
+            handleUpdate(datas);
+          }
+        },
+      }"
       :data="formData[field.dataIndex] || []"
       :loading="field.form.tableConfig?.loading"
       :selectedKeys="formSelectedKeys[field.dataIndex]"
@@ -298,46 +336,6 @@ defineExpose({
           formSelectedKeys[field.dataIndex] = val;
         }
       "
-      @action-click="
-        (r) => {
-          if (r.actionKey == 'delete') {
-            let datas = formData[field.dataIndex];
-            datas.splice(r.records._rowIndex, 1);
-            handleUpdate(datas);
-          }
-        }
-      "
-      @search="field.form.tableConfig?.handleSearch || (() => {})"
-      @page-change="field.form.tableConfig?.handlePageChange || (() => {})"
-      @column-config-change="
-        field.form.tableConfig?.handleColumnConfigChange || (() => {})
-      "
-      @form-submit="
-        ({ mode, data, record }) => {
-          if (mode == 'create') {
-            let datas = formData[field.dataIndex];
-            datas.push({
-              ...data,
-              _rowIndex: datas.length,
-              [field.form.tableConfig?.rowKey || 'key']: String(
-                Date.now() + Math.random()
-              ),
-            });
-            handleUpdate(datas);
-          } else if (mode == 'edit') {
-            let datas = formData[field.dataIndex];
-            const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
-            if (index !== -1) {
-              datas[index] = {
-                ...datas[index],
-                ...data,
-              };
-              handleUpdate(datas);
-            }
-          }
-        }
-      "
-      @api-request="field.form.tableConfig?.handleApiRequest || (() => {})"
     />
   </a-form-item>
 </template>

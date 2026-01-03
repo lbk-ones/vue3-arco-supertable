@@ -57,9 +57,15 @@ const props = defineProps({
     type: Number,
     default: 800,
   },
+  // 选中的行 key 数组（用于表格类型字段的行选择）
   selectedKeys: {
     type: Array,
     default: () => [],
+  },
+  // 最顶层表格传入的配置对象config
+  config: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -109,9 +115,11 @@ const initializeFormData = () => {
     // 编辑/只读模式：从 record 中获取数据
     // 使用 formFields（所有有form配置的字段）而不是 availableFields
     formFields.value.forEach((field) => {
-      state.formData[field.dataIndex] = JSON.parse(
-        JSON.stringify(props.record[field.dataIndex])
-      );
+      props.record[field.dataIndex] !== void 0
+        ? (state.formData[field.dataIndex] = JSON.parse(
+            JSON.stringify(props.record[field.dataIndex])
+          ))
+        : (state.formData[field.dataIndex] = null);
     });
   } else {
     // 新增模式：初始化空值
@@ -268,7 +276,8 @@ const handleSubmit = () => {
 
     // 如果是编辑模式，添加 id
     if (props.mode === "edit" && props.record) {
-      submitData.key = props.record.key;
+      submitData[props.config.rowKey || "key"] =
+        props.record[props.config.rowKey || "key"];
     }
 
     // 触发提交事件，让父组件处理 API 调用
