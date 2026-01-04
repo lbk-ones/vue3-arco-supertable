@@ -357,7 +357,11 @@ defineExpose({
   <a-modal
     :visible="visible"
     :title="
-      mode === 'create' ? '新增记录' : mode === 'readonly' ? '查看详情' : '编辑记录'
+      mode === 'create'
+        ? '新增记录'
+        : mode === 'readonly'
+        ? '查看详情'
+        : '编辑记录'
     "
     @update:visible="(val) => $emit('update:visible', val)"
     :ok-text="mode === 'readonly' ? '关闭' : '确定'"
@@ -369,6 +373,7 @@ defineExpose({
     :hide-cancel="mode === 'readonly'"
   >
     <a-form
+      v-if="formLayout === 'horizontal'"
       :model="state.formData"
       layout="vertical"
       :validate-trigger="['change', 'blur']"
@@ -376,7 +381,6 @@ defineExpose({
     >
       <!-- 行布局模式 (水平并排) -->
       <a-grid
-        v-if="formLayout === 'horizontal'"
         :col-gap="formColGap"
         :row-gap="formRowGap"
         :cols="formColumns"
@@ -385,7 +389,14 @@ defineExpose({
         <a-grid-item
           v-for="field in availableFields"
           :key="field.dataIndex"
-          :span="field.form.type === 'table' ? formColumns : 1"
+          :span="
+            field.form.type === 'table' || field.form?.oneRow === true
+              ? formColumns
+              : ((field.form?.columns ?? 0) > 0 &&
+                (field.form?.columns ?? 0) <= formColumns)
+              ? field.form?.columns
+              : 1
+          "
           class="horizontal-form-item"
         >
           <!-- 表单字段渲染（共用组件） -->
@@ -394,7 +405,7 @@ defineExpose({
               (re) => {
                 if (field?.form?.type === 'table') {
                   state.refMap[field.dataIndex] = re;
-                }else{
+                } else {
                   state.fieldRefMap[field.dataIndex] = re;
                 }
               }
@@ -406,12 +417,18 @@ defineExpose({
             :get-options="getOptions"
             :get-field-attrs="getFieldAttrs"
             :model-value="state.formData[field.dataIndex]"
-            @update:model-value="(val) => (state.formData[field.dataIndex] = val)"
+            @update:model-value="
+              (val) => (state.formData[field.dataIndex] = val)
+            "
             :selectedKeys="props.selectedKeys"
             @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
             :all-fields="availableFields"
             :on-enter-next="handleEnterNext"
-          />
+          >
+            <template #[field.form.slotName]="slotProps">
+              <slot :name="field.form.slotName" v-bind="slotProps"></slot>
+            </template>
+          </table-form-field-item>
         </a-grid-item>
       </a-grid>
     </a-form>
@@ -430,11 +447,11 @@ defineExpose({
         <table-form-field-item
           :ref="
             (re) => {
-             if (field?.form?.type === 'table') {
-                  state.refMap[field.dataIndex] = re;
-                }else{
-                  state.fieldRefMap[field.dataIndex] = re;
-                }
+              if (field?.form?.type === 'table') {
+                state.refMap[field.dataIndex] = re;
+              } else {
+                state.fieldRefMap[field.dataIndex] = re;
+              }
             }
           "
           :field="field"
@@ -449,7 +466,11 @@ defineExpose({
           @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
           :all-fields="availableFields"
           :on-enter-next="handleEnterNext"
-        />
+        >
+          <template #[field.form.slotName]="slotProps">
+            <slot :name="field.form.slotName" v-bind="slotProps"></slot>
+          </template>
+        </table-form-field-item>
       </template>
     </a-form>
   </a-modal>

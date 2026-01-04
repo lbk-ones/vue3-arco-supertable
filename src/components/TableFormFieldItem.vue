@@ -66,6 +66,7 @@ const supportEnterTypes = [
   "date",
   "time",
   "datetime",
+  "slot",
 ];
 
 // 获取下一个可聚焦的字段
@@ -114,8 +115,6 @@ const getNextFocusableField = () => {
 // 处理回车事件
 const handleEnter = () => {
   const nextFieldIndex = getNextFocusableField();
-  console.log("nextFieldIndex-->", nextFieldIndex);
-
   if (nextFieldIndex && props.onEnterNext) {
     props.onEnterNext(nextFieldIndex);
   }
@@ -178,7 +177,9 @@ const focus = () => {
         ?.querySelector("input");
       if (focusableElement && focusableElement.focus) {
         focusableElement.focus();
-        if (["select","date","time", "datetime"].includes(props.field.form.type)) {
+        if (
+          ["select", "date", "time", "datetime"].includes(props.field.form.type)
+        ) {
           popupVisible.value = true;
         }
       }
@@ -246,7 +247,6 @@ defineExpose({
       :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
-      @keydown.enter="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
@@ -389,7 +389,7 @@ defineExpose({
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
       @change="handleEnter"
-       v-model:popup-visible="popupVisible"
+      v-model:popup-visible="popupVisible"
       show-time
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
@@ -422,6 +422,27 @@ defineExpose({
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
+  </a-form-item>
+
+  <!-- 动态插槽 -->
+  <a-form-item
+    v-else-if="field.form.type === 'slot' && field.form.slotName"
+    :field="field.dataIndex"
+    :label="field.title"
+  >
+    <slot
+      :name="field.form.slotName"
+      :domRef="(ref) => (dom = ref)"
+      :field="field"
+      :handleUpdate="handleUpdate"
+      :handleEnter="handleEnter"
+      :formData="formData"
+      :disabled="isFieldDisabled(field)"
+      :attrs="getFieldAttrs(field)"
+    >
+      <!-- 默认内容 -->
+      <div style="color: red">请提供 {{ field.form.slotName }} 插槽</div>
+    </slot>
   </a-form-item>
 
   <!-- 表格 -->

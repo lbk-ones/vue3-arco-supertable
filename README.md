@@ -53,6 +53,7 @@
 负责单个表单字段的渲染和绑定。
 
 **支持的控件类型：**
+- `slot` - 自定义插槽
 - `input` - 文本输入框
 - `number` - 数字输入框
 - `textarea` - 多行文本
@@ -125,6 +126,7 @@ const handleFormSubmit = (data) => {
 
 | 控件类型 | 说明 | 值类型 | 示例 |
 |---------|------|--------|------|
+| `slot` | 自定义插槽 | any | any |
 | `input` | 文本输入框 | 字符串 | 姓名、描述等 |
 | `number` | 数字输入框 | 数字 | 价格、数量等 |
 | `textarea` | 多行文本 | 字符串 | 备注、评论等 |
@@ -152,8 +154,12 @@ const handleFormSubmit = (data) => {
 form: {
   type: 'input',              // 控件类型
   creatable: true,            // 新增时可用
+  slotName: true,             // type=slot时生效
+  columns: true,              // 占多数列
   editable: true,             // 编辑时可用
   required: true,             // 必填
+  enterNext: "xxx",           // 回车指向下一个控件（带输入框的控件才可以）
+  oneRow:   true,             // 占满一行
   disabled: false,            // 禁用状态（支持函数）
   options: [],                // 选项数据（支持函数）
   defaultValue: null,         // 默认值

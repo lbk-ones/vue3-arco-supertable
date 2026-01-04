@@ -566,7 +566,12 @@ defineExpose({
 
       <!-- 右侧：搜索、列配置和导出按钮 -->
       <div class="tools-area">
-        <icon-refresh class="hover-point" :style="{ fontSize: '20px' }" @click="fetchData" :spin="loading" />
+        <icon-refresh
+          class="hover-point"
+          :style="{ fontSize: '20px' }"
+          @click="fetchData"
+          :spin="loading"
+        />
         <!-- 搜索按钮 -->
         <a-button
           v-if="config.searchFields"
@@ -751,17 +756,17 @@ defineExpose({
       :stripe="config.stripe !== false"
     >
       <!-- 状态列插槽 -->
-      <template #status-cell="{ record }">
+      <template #status-cell="{ record,column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === 'status')?.statusMap?.[
-              record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
+              record[column.dataIndex]
             ]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === "status")?.statusMap?.[
-              record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
+              record[column.dataIndex]
             ]?.label || record.status
           }}
         </a-tag>
@@ -924,9 +929,12 @@ defineExpose({
     <TableForm
       v-if="config.showForm"
       :visible="state.formVisible"
-      :modalWidth="state.modalWidth"
+      :modalWidth="config.modalWidth"
       :mode="state.formMode"
-      formLayout="horizontal"
+      :formLayout="config.formLayout || 'horizontal'"
+      :formColumns="config.formColumns || 3"
+      :formColGap="config.formColGap || 10"
+      :formRowGap="config.formRowGap || 10"
       :record="state.formRecord"
       :columns="config.columns"
       :config="config"
@@ -935,7 +943,11 @@ defineExpose({
       @update:selected-keys="(val) => emit('update:selectedKeys', val)"
       @submit="handleFormSubmit"
       @success="handleFormSuccess"
-    />
+    >
+      <template v-for="fm in visibleColumns" #[fm?.form?.slotName]="slotProps">
+        <slot :name="fm?.form?.slotName" v-bind="slotProps" v-if="fm?.form?.slotName"></slot>
+      </template>
+    </TableForm>
   </div>
 </template>
 

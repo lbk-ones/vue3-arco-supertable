@@ -20,6 +20,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2022-01-15",
     orderDetails: [],
+    enable: "false",
   },
   {
     id: "2",
@@ -30,6 +31,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-06-20",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "3",
@@ -40,6 +42,7 @@ const tableData = ref([
     status: "inactive",
     joinDate: "2022-03-10",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "4",
@@ -50,6 +53,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2023-01-05",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "5",
@@ -60,6 +64,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-09-12",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "6",
@@ -70,6 +75,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2022-05-18",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "7",
@@ -80,6 +86,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2020-11-22",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "8",
@@ -90,6 +97,7 @@ const tableData = ref([
     status: "inactive",
     joinDate: "2022-07-30",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "9",
@@ -100,6 +108,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-02-14",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "10",
@@ -110,6 +119,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2023-04-08",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "11",
@@ -120,6 +130,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2022-08-03",
     orderDetails: [],
+    enable: "true",
   },
   {
     id: "12",
@@ -130,6 +141,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-10-11",
     orderDetails: [],
+    enable: "true",
   },
 ]);
 // columns 的字段的宽度最好不要每个都写死，留一个自动计算，不然fixed会有问题的
@@ -142,7 +154,7 @@ const tableConfig = reactive({
       dataIndex: "name",
       width: 160,
       visible: true,
-      ellipsis:true,
+      ellipsis: true,
       fixed: "left",
       sortable: {
         compare: (a, b) => a.localeCompare(b),
@@ -159,6 +171,7 @@ const tableConfig = reactive({
         },
       },
     },
+
     {
       title: "部门",
       dataIndex: "department",
@@ -225,8 +238,8 @@ const tableConfig = reactive({
       dataIndex: "status",
       width: 200,
       visible: true,
-      type: "status",
-      slotName: "status-cell",
+      //type: "status",
+      slotName: "status-cell", // 预留插槽 写死
       statusMap: {
         active: { label: "在职", color: "green" },
         inactive: { label: "离职", color: "red" },
@@ -245,14 +258,84 @@ const tableConfig = reactive({
     {
       title: "加入日期",
       dataIndex: "joinDate",
-      //width: 120,
+      width: 120,
+      ellipsis: true,
       visible: true,
       form: {
         type: "date",
         creatable: true,
         editable: true,
         required: true,
+        enterNext: "phone", // 回车聚焦到电话字段
         placeholder: "请选择加入日期",
+      },
+    },
+    {
+      title: "电话",
+      dataIndex: "phone",
+      width: 160,
+      visible: true,
+      ellipsis: true,
+      sortable: {
+        compare: (a, b) => a.localeCompare(b),
+      },
+      form: {
+        type: "slot",
+        slotName: "phone-input",
+        creatable: true,
+        columns: 1, // 占两列
+        editable: true,
+        required: true,
+        placeholder: "我是个插槽",
+        enterNext: "remark", // 回车聚焦到电话字段
+      },
+    },
+    {
+      title: "是否启用",
+      dataIndex: "enable",
+      width: 160,
+      visible: true,
+      ellipsis: true,
+      sortable: {
+        compare: (a, b) => a.localeCompare(b),
+      },
+      //type: "enable", // 预留的写死
+      slotName: "status-cell", // 预留插槽 写死
+      statusMap: {
+        true: { label: "启用", color: "green" },
+        false: { label: "禁用", color: "red" },
+      },
+      form: {
+        type: "slot",
+        slotName: "enable-switch",
+        creatable: true,
+        //columns: 2, // 占两列
+        editable: true,
+        required: true,
+        placeholder: "我是个插槽",
+        enterNext: "remark", // 回车聚焦到电话字段
+      },
+    },
+    {
+      title: "备注",
+      dataIndex: "remark",
+      // width: 160,
+      visible: true,
+      ellipsis: true,
+      sortable: {
+        compare: (a, b) => a.localeCompare(b),
+      },
+      form: {
+        type: "textarea",
+        creatable: true,
+        editable: true,
+        required: true,
+        oneRow: true,
+        placeholder: "输入备注",
+        attrs: {
+          "auto-size": { minRows: 2, maxRows: 4 },
+          rows: 4,
+        },
       },
     },
     {
@@ -606,6 +689,14 @@ const tableConfig = reactive({
   // 表格大小
   tableSize: "small",
 
+  // 弹窗宽度
+  modalWidth: 1000,
+
+  // 表单布局
+  formLayout: "horizontal", // 表单布局 horizontal vertical
+
+  // 表单列数，4代表一行4列
+  formColumns: 4,
   // 滚动配置
   scroll: { x: 1200, y: "auto" },
 
@@ -664,48 +755,86 @@ const textareaValue = computed(() => {
 </script>
 
 <template>
-  <a-row >
-      <a-col :span="16">
-        <div class="example-container">
-          <h1
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 10px;
-            "
+  <a-row>
+    <a-col :span="16">
+      <div class="example-container">
+        <h1
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+          "
+        >
+          基于Arco的超级表格组件示例
+          <a-button type="outline" size="large" @click="switchPaginationType"
+            >切换分页模式（当前：{{ paginationType }}）</a-button
           >
-            基于Arco的超级表格组件示例
-            <a-button type="outline" size="large" @click="switchPaginationType"
-              >切换分页模式（当前：{{ paginationType }}）</a-button
-            >
-          </h1>
-          <!-- 使用通用表格组件 -->
-          <SuperTable
-            :ref="(ref) => (tableRef = ref)"
-            :config="tableConfig"
-            v-model:data="tableData"
-            v-model:loading="loading"
-            v-model:selectedKeys="selectedKeys"
+        </h1>
+        <!-- 使用通用表格组件 -->
+        <SuperTable
+          :ref="(ref) => (tableRef = ref)"
+          :config="tableConfig"
+          v-model:data="tableData"
+          v-model:loading="loading"
+          v-model:selectedKeys="selectedKeys"
+        >
+          <template #toolbar>
+            <a-button type="secondary"> 导出 Excel </a-button>
+          </template>
+
+          <template
+            #phone-input="{
+              domRef,
+              field,
+              formData,
+              disabled,
+              attrs,
+              handleEnter,
+            }"
           >
-            <template #toolbar>
-              <a-button type="secondary"> 导出 Excel </a-button>
-            </template>
-          </SuperTable>
-        </div>
-      </a-col>
-      <a-col :span="8">
-        <div style="display: flex; flex: auto; height: 100vh; overflow: auto">
-          <VueJsonPretty
-            showLineNumber
-            editable
-            showIcon
-            selectOnClickNode
-            :data="textareaValue"
-          />
-        </div>
-      </a-col>
-    </a-row>
+            <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
+            <a-space :size="8">
+              <a-input
+                :ref="(ref) => domRef(ref)"
+                v-model="formData[field.dataIndex]"
+                v-bind="attrs"
+                :disabled="disabled"
+                :placeholder="field.form.placeholder"
+                @keydown.enter="handleEnter"
+              />
+              <a-button>+</a-button>
+            </a-space>
+          </template>
+
+          <!-- 其实预留了这个组件的 这里只是做个测试而已 -->
+          <template
+            #enable-switch="{ field, formData, disabled, attrs, handleUpdate }"
+          >
+            <a-space :size="8">
+              <a-switch
+                :model-value="formData[field.dataIndex]"
+                @update:model-value="handleUpdate"
+                :disabled="disabled"
+                v-bind="attrs"
+              />
+            </a-space>
+          </template>
+        </SuperTable>
+      </div>
+    </a-col>
+    <a-col :span="8">
+      <div style="display: flex; flex: auto; height: 100vh; overflow: auto">
+        <VueJsonPretty
+          showLineNumber
+          editable
+          showIcon
+          selectOnClickNode
+          :data="textareaValue"
+        />
+      </div>
+    </a-col>
+  </a-row>
 </template>
 
 <style scoped>
@@ -715,7 +844,7 @@ const textareaValue = computed(() => {
   /* min-height: 100vh; */
   display: flex;
   flex-flow: column nowrap;
-  width:100%;
+  width: 100%;
 }
 
 .example-container h2 {
