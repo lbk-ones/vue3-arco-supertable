@@ -1,6 +1,14 @@
 <script setup>
 import TableFormFieldItem from "./TableFormFieldItem.vue";
-import { reactive, ref, computed, onMounted, watch, nextTick } from "vue";
+import {
+  reactive,
+  ref,
+  computed,
+  onMounted,
+  watch,
+  nextTick,
+  toRaw,
+} from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 
 // Props 定义
@@ -336,12 +344,35 @@ onMounted(() => {
   initializeFormData();
 });
 
+// 支持回车的组件类型列表
+const supportEnterTypes = [
+  "input",
+  "number",
+  "textarea",
+  "select",
+  "date",
+  "time",
+  "datetime",
+  "slot",
+];
+
 // 监听弹窗显示、模式、记录变化
 watch(
   () => [props.visible, props.mode, props.record],
   () => {
     if (props.visible) {
       initializeFormData();
+      let fitem = availableFields.value?.find(e=>{
+        if(e.form && e.form.type){
+          return supportEnterTypes.includes(e.form.type)
+        }
+        return false;
+      }) ?? null;
+      if (fitem && fitem.dataIndex) {
+        nextTick(()=>{
+          handleEnterNext(fitem.dataIndex);
+        })
+      }
     }
   },
   { deep: true }
@@ -392,8 +423,8 @@ defineExpose({
           :span="
             field.form.type === 'table' || field.form?.oneRow === true
               ? formColumns
-              : ((field.form?.columns ?? 0) > 0 &&
-                (field.form?.columns ?? 0) <= formColumns)
+              : (field.form?.columns ?? 0) > 0 &&
+                (field.form?.columns ?? 0) <= formColumns
               ? field.form?.columns
               : 1
           "
@@ -424,6 +455,7 @@ defineExpose({
             @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
             :all-fields="availableFields"
             :on-enter-next="handleEnterNext"
+             :supportEnterTypes="supportEnterTypes"
           >
             <template #[field.form.slotName]="slotProps">
               <slot :name="field.form.slotName" v-bind="slotProps"></slot>
@@ -466,6 +498,7 @@ defineExpose({
           @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
           :all-fields="availableFields"
           :on-enter-next="handleEnterNext"
+          :supportEnterTypes="supportEnterTypes"
         >
           <template #[field.form.slotName]="slotProps">
             <slot :name="field.form.slotName" v-bind="slotProps"></slot>

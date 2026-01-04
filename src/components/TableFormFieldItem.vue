@@ -52,22 +52,17 @@ const props = defineProps({
     type: Function,
     default: null,
   },
+  // 支持回车键的组件类型
+  supportEnterTypes: {
+    type: Array,
+    default: [],
+  },
 });
 const formSelectedKeys = reactive({});
 const popupVisible = ref(false);
 const emit = defineEmits(["update:modelValue", "update:selectedKeys"]);
 
-// 支持回车的组件类型列表
-const supportEnterTypes = [
-  "input",
-  "number",
-  "textarea",
-  "select",
-  "date",
-  "time",
-  "datetime",
-  "slot",
-];
+
 
 // 获取下一个可聚焦的字段
 const getNextFocusableField = () => {
@@ -100,7 +95,7 @@ const getNextFocusableField = () => {
 
     // 检查该字段是否支持回车且未被禁用
     if (
-      supportEnterTypes.includes(formConfig?.type) &&
+      props.supportEnterTypes.includes(formConfig?.type) &&
       !props.isFieldDisabled(nextField)
     ) {
       return nextField.dataIndex;

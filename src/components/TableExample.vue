@@ -31,7 +31,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-06-20",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "3",
@@ -42,7 +42,7 @@ const tableData = ref([
     status: "inactive",
     joinDate: "2022-03-10",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "4",
@@ -53,7 +53,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2023-01-05",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "5",
@@ -64,7 +64,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-09-12",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "6",
@@ -75,7 +75,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2022-05-18",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "7",
@@ -86,7 +86,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2020-11-22",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "8",
@@ -97,7 +97,7 @@ const tableData = ref([
     status: "inactive",
     joinDate: "2022-07-30",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "9",
@@ -108,7 +108,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-02-14",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "10",
@@ -119,7 +119,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2023-04-08",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "11",
@@ -130,7 +130,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2022-08-03",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
   {
     id: "12",
@@ -141,7 +141,7 @@ const tableData = ref([
     status: "active",
     joinDate: "2021-10-11",
     orderDetails: [],
-    enable: "true",
+    enable: true,
   },
 ]);
 // columns 的字段的宽度最好不要每个都写死，留一个自动计算，不然fixed会有问题的
