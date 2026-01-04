@@ -2,7 +2,7 @@
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
 import { reactive, ref, computed, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
+import { Col, Message } from "@arco-design/web-vue";
 import SuperTable from "./Table.vue";
 import { del, post, put } from "../request.js";
 const tableRef = ref(null);
@@ -132,7 +132,7 @@ const tableData = ref([
     orderDetails: [],
   },
 ]);
-
+// columns 的字段的宽度最好不要每个都写死，留一个自动计算，不然fixed会有问题的
 // 表格配置 - 前端分页示例
 const tableConfig = reactive({
   // 列配置
@@ -140,8 +140,9 @@ const tableConfig = reactive({
     {
       title: "姓名",
       dataIndex: "name",
-      width: 120,
+      width: 160,
       visible: true,
+      ellipsis:true,
       fixed: "left",
       sortable: {
         compare: (a, b) => a.localeCompare(b),
@@ -244,7 +245,7 @@ const tableConfig = reactive({
     {
       title: "加入日期",
       dataIndex: "joinDate",
-      width: 120,
+      //width: 120,
       visible: true,
       form: {
         type: "date",
@@ -531,6 +532,7 @@ const tableConfig = reactive({
         keys.push([key, "eq", params.searchValues[key]]);
       }
     });
+    loading.value = true;
     return post(url, {
       pageQuery: {
         pageNo: params.pageNo,
@@ -565,7 +567,8 @@ const tableConfig = reactive({
       console.log("编辑数据:", data);
       if (config.paginationType === "frontend") {
         const index = tableData.value.findIndex(
-          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+          (item) =>
+            item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
         );
         if (index !== -1) {
           tableData.value[index] = {
@@ -635,7 +638,8 @@ watch(
 const paginationType = ref("frontend");
 
 const switchPaginationType = () => {
-  paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
+  paginationType.value =
+    paginationType.value === "frontend" ? "backend" : "frontend";
   tableConfig.paginationType = paginationType.value;
   if (tableConfig.paginationType === "backend") {
     // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
@@ -650,7 +654,9 @@ const switchPaginationType = () => {
   } else {
     window.location.reload();
   }
-  Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
+  Message.info(
+    `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
+  );
 };
 const textareaValue = computed(() => {
   return JSON.parse(JSON.stringify(tableConfig, null, 8));
@@ -658,37 +664,48 @@ const textareaValue = computed(() => {
 </script>
 
 <template>
-  <div style="display: flex; justify-content: space-between">
-    <div class="example-container">
-      <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px">
-        基于Acro的超级表格组件示例
-        <a-button type="outline" size="large" @click="switchPaginationType"
-          >切换分页模式（当前：{{ paginationType }}）</a-button
-        >
-      </h1>
-      <!-- 使用通用表格组件 -->
-      <SuperTable
-        :ref="(ref) => (tableRef = ref)"
-        :config="tableConfig"
-        v-model:data="tableData"
-        :loading="loading"
-        v-model:selectedKeys="selectedKeys"
-      >
-        <template #toolbar>
-          <a-button type="secondary"> 导出 Excel </a-button>
-        </template>
-      </SuperTable>
-    </div>
-    <div style="display: flex; flex: auto; height: 100vh; overflow: auto">
-      <VueJsonPretty
-        showLineNumber
-        editable
-        showIcon
-        selectOnClickNode
-        :data="textareaValue"
-      />
-    </div>
-  </div>
+  <a-row >
+      <a-col :span="16">
+        <div class="example-container">
+          <h1
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+            "
+          >
+            基于Arco的超级表格组件示例
+            <a-button type="outline" size="large" @click="switchPaginationType"
+              >切换分页模式（当前：{{ paginationType }}）</a-button
+            >
+          </h1>
+          <!-- 使用通用表格组件 -->
+          <SuperTable
+            :ref="(ref) => (tableRef = ref)"
+            :config="tableConfig"
+            v-model:data="tableData"
+            v-model:loading="loading"
+            v-model:selectedKeys="selectedKeys"
+          >
+            <template #toolbar>
+              <a-button type="secondary"> 导出 Excel </a-button>
+            </template>
+          </SuperTable>
+        </div>
+      </a-col>
+      <a-col :span="8">
+        <div style="display: flex; flex: auto; height: 100vh; overflow: auto">
+          <VueJsonPretty
+            showLineNumber
+            editable
+            showIcon
+            selectOnClickNode
+            :data="textareaValue"
+          />
+        </div>
+      </a-col>
+    </a-row>
 </template>
 
 <style scoped>
@@ -698,6 +715,7 @@ const textareaValue = computed(() => {
   /* min-height: 100vh; */
   display: flex;
   flex-flow: column nowrap;
+  width:100%;
 }
 
 .example-container h2 {

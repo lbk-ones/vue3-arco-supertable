@@ -1,5 +1,12 @@
 <script setup>
-import { reactive, ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import {
+  reactive,
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 
@@ -67,6 +74,7 @@ const emit = defineEmits([
   // "form-submit", // 表单提交
   "update:selectedKeys", // 选中行变化
   "update:data", // 表格数据集合变化
+  "update:loading", // 表格数据集合变化
 ]);
 
 // 状态管理
@@ -144,7 +152,9 @@ const getFilteredData = () => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
+        const searchField = props.config.searchFields.find(
+          (f) => f.dataIndex === field
+        );
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -152,7 +162,9 @@ const getFilteredData = () => {
         switch (fieldType) {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
-              const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+              const itemValue = Array.isArray(fieldValue)
+                ? fieldValue
+                : [fieldValue];
               return value.some((v) => itemValue.includes(v));
             }
             return true;
@@ -161,7 +173,9 @@ const getFilteredData = () => {
             if (Array.isArray(value) && value.length === 2) {
               const [startDate, endDate] = value;
               const itemDate = new Date(fieldValue);
-              return itemDate >= new Date(startDate) && itemDate <= new Date(endDate);
+              return (
+                itemDate >= new Date(startDate) && itemDate <= new Date(endDate)
+              );
             }
             return true;
 
@@ -233,6 +247,7 @@ const fetchData = async () => {
       pageSize: state.pageSize,
       searchValues: state.searchValues,
     });
+    emit("update:loading", false);
     let records = data?.records || [];
     emit("update:data", records);
     //state.apiData = records || [];
@@ -511,7 +526,11 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="isFormItem ? 'arco-table-container-form-item' : 'arco-table-container'">
+  <div
+    :class="
+      isFormItem ? 'arco-table-container-form-item' : 'arco-table-container'
+    "
+  >
     <!-- 操作工具栏 -->
     <div class="table-toolbar" style="margin-bottom: 16px">
       <!-- 左侧：操作按钮 -->
@@ -547,6 +566,7 @@ defineExpose({
 
       <!-- 右侧：搜索、列配置和导出按钮 -->
       <div class="tools-area">
+        <icon-refresh class="hover-point" :style="{ fontSize: '20px' }" @click="fetchData" :spin="loading" />
         <!-- 搜索按钮 -->
         <a-button
           v-if="config.searchFields"
@@ -697,7 +717,10 @@ defineExpose({
           >
             🔍 搜索
           </a-button>
-          <a-button :size="config.tableSize || 'small'" @click="handleResetSearch">
+          <a-button
+            :size="config.tableSize || 'small'"
+            @click="handleResetSearch"
+          >
             重置
           </a-button>
         </div>
@@ -714,7 +737,7 @@ defineExpose({
       :row-key="getKeyName()"
       :row-selection="
         config.selection !== false
-          ? { type: 'checkbox', showCheckedAll: true }
+          ? { type: 'checkbox', showCheckedAll: true, width: 40, fixed: true }
           : undefined
       "
       :selected-keys="props.selectedKeys"
@@ -760,7 +783,10 @@ defineExpose({
 
     <!-- 分页 -->
     <div v-if="config.paginationType !== 'none'" class="table-pagination">
-      <span>共 {{ totalCount }} 条数据，已选择 {{ props.selectedKeys.length }} 条</span>
+      <span
+        >共 {{ totalCount }} 条数据，已选择
+        {{ props.selectedKeys.length }} 条</span
+      >
       <a-pagination
         :current="state.currentPage"
         :page-size="state.pageSize"
@@ -808,7 +834,9 @@ defineExpose({
           <div
             class="col-name"
             :class="{
-              'col-name-highlighted': state.highlightedColumns.has(col.dataIndex),
+              'col-name-highlighted': state.highlightedColumns.has(
+                col.dataIndex
+              ),
             }"
             :title="col.title"
           >
@@ -855,7 +883,9 @@ defineExpose({
     <!-- 多条记录选择弹窗 -->
     <a-modal
       :visible="state.viewListVisible"
-      :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
+      :title="
+        state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'
+      "
       @update:visible="(val) => (state.viewListVisible = val)"
       :ok-text="null"
       :cancel-text="null"
@@ -991,6 +1021,7 @@ defineExpose({
 .tools-area {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .operations {
