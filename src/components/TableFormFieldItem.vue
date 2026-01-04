@@ -167,38 +167,18 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
   }
 };
 const dom = ref(null);
-/**
- * 模拟在指定元素上按下并释放一个键盘按键。
- * @param {HTMLElement} element - 要模拟按键的目标 DOM 元素。
- * @param {string} key - 要模拟的键，例如 'Enter', 'a', 'ArrowUp'。
- */
-function simulateKeyPress(element, key) {
-  // 1. 创建并触发 keydown 事件
-  const keydownEvent = new KeyboardEvent("keydown", {
-    key: key,
-    keyCode: key === "Enter" ? 13 : key.charCodeAt(0), // keyCode 是数字，'Enter' 是 13
-    code: `Key${key.toUpperCase()}`, // 例如 'KeyA', 'Enter'
-    which: key === "Enter" ? 13 : key.charCodeAt(0), // which 是 keyCode 的别名
-    bubbles: false, // 事件是否冒泡
-    cancelable: true, // 事件是否可取消
-  });
-  element.dispatchEvent(keydownEvent);
-}
-// enter -> focus
-// select -> enter select -> focus
+
 const focus = () => {
   if (dom.value) {
     if (dom.value.focus) {
       dom.value.focus();
     } else {
-      console.log('props.field.dataIndex--->',props.field.dataIndex);
       let focusableElement = document
         .querySelector("#" + props.field.dataIndex)
         ?.querySelector("input");
       if (focusableElement && focusableElement.focus) {
         focusableElement.focus();
         if (["select","date","time", "datetime"].includes(props.field.form.type)) {
-          console.log('popup-visible--->');
           popupVisible.value = true;
         }
       }

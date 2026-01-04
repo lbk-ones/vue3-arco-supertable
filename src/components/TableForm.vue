@@ -113,8 +113,6 @@ const handleEnterNext = (nextFieldIndex) => {
   nextTick(() => {
     // 尝试从字段ref中获取焦点目标元素
     const fieldComponent = state.fieldRefMap[nextFieldIndex];
-    console.log('fieldComponent--->',fieldComponent);
-    
     if (fieldComponent) {
       // 查找该组件内的input/select/textarea等可聚焦元素
       fieldComponent.focus && fieldComponent.focus();
