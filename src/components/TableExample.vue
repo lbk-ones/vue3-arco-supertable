@@ -152,6 +152,7 @@ const tableConfig = reactive({
         editable: true,
         required: true,
         placeholder: "请输入姓名",
+        enterNext: "department", // 回车聚焦到部门字段
         attrs: {
           "max-length": 50,
         },
@@ -168,6 +169,7 @@ const tableConfig = reactive({
         editable: true,
         required: true,
         placeholder: "请选择部门",
+        enterNext: "salary", // 回车聚焦到薪资字段
         options: [
           { label: "技术部", value: "技术部" },
           { label: "销售部", value: "销售部" },
@@ -192,6 +194,7 @@ const tableConfig = reactive({
         editable: true,
         required: true,
         placeholder: "请输入薪资",
+        enterNext: "email", // 回车聚焦到邮箱字段
         attrs: {
           min: 0,
           max: 999999,
@@ -209,6 +212,7 @@ const tableConfig = reactive({
         editable: true,
         required: true,
         placeholder: "请输入邮箱",
+        enterNext: "joinDate", // 回车聚焦到加入日期字段
         validator: (value) => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           return !emailRegex.test(value) ? "请输入有效的邮箱" : "";

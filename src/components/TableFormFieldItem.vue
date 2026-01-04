@@ -42,9 +42,84 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  // 所有表单字段列表（用于enterNext功能）
+  allFields: {
+    type: Array,
+    default: () => [],
+  },
+  // 回车聚焦下一个字段的回调
+  onEnterNext: {
+    type: Function,
+    default: null,
+  },
 });
 const formSelectedKeys = reactive({});
+const popupVisible = ref(false);
 const emit = defineEmits(["update:modelValue", "update:selectedKeys"]);
+
+// 支持回车的组件类型列表
+const supportEnterTypes = [
+  "input",
+  "number",
+  "textarea",
+  "select",
+  "date",
+  "time",
+  "datetime",
+];
+
+// 获取下一个可聚焦的字段
+const getNextFocusableField = () => {
+  if (!props.field.form?.enterNext || !props.allFields.length) {
+    return null;
+  }
+
+  const targetDataIndex = props.field.form.enterNext;
+  const currentIndex = props.allFields.findIndex(
+    (f) => f.dataIndex === props.field.dataIndex
+  );
+
+  if (currentIndex === -1) {
+    return null;
+  }
+
+  // 从指定的dataIndex开始查找，跳过不支持回车的组件
+  let searchIndex = props.allFields.findIndex(
+    (f) => f.dataIndex === targetDataIndex
+  );
+
+  if (searchIndex === -1) {
+    return null;
+  }
+
+  // 找到第一个支持回车的可用字段
+  while (searchIndex < props.allFields.length) {
+    const nextField = props.allFields[searchIndex];
+    const formConfig = nextField.form;
+
+    // 检查该字段是否支持回车且未被禁用
+    if (
+      supportEnterTypes.includes(formConfig?.type) &&
+      !props.isFieldDisabled(nextField)
+    ) {
+      return nextField.dataIndex;
+    }
+
+    searchIndex++;
+  }
+
+  return null;
+};
+
+// 处理回车事件
+const handleEnter = () => {
+  const nextFieldIndex = getNextFocusableField();
+  console.log("nextFieldIndex-->", nextFieldIndex);
+
+  if (nextFieldIndex && props.onEnterNext) {
+    props.onEnterNext(nextFieldIndex);
+  }
+};
 
 onMounted(() => {
   // 初始化表格字段的 selectedKeys
@@ -72,12 +147,16 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     datas.push({
       ...data,
       _rowIndex: datas.length,
-      [props.field.form.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
+      [props.field.form.tableConfig?.rowKey || "key"]: String(
+        Date.now() + Math.random()
+      ),
     });
     handleUpdate(datas);
   } else if (mode == "edit") {
     let datas = props.formData[props.field.dataIndex];
-    const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
+    const index = datas.findIndex(
+      (item) => item._rowIndex === record._rowIndex
+    );
     if (index !== -1) {
       datas[index] = {
         ...datas[index],
@@ -87,9 +166,49 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     }
   }
 };
+const dom = ref(null);
+/**
+ * 模拟在指定元素上按下并释放一个键盘按键。
+ * @param {HTMLElement} element - 要模拟按键的目标 DOM 元素。
+ * @param {string} key - 要模拟的键，例如 'Enter', 'a', 'ArrowUp'。
+ */
+function simulateKeyPress(element, key) {
+  // 1. 创建并触发 keydown 事件
+  const keydownEvent = new KeyboardEvent("keydown", {
+    key: key,
+    keyCode: key === "Enter" ? 13 : key.charCodeAt(0), // keyCode 是数字，'Enter' 是 13
+    code: `Key${key.toUpperCase()}`, // 例如 'KeyA', 'Enter'
+    which: key === "Enter" ? 13 : key.charCodeAt(0), // which 是 keyCode 的别名
+    bubbles: false, // 事件是否冒泡
+    cancelable: true, // 事件是否可取消
+  });
+  element.dispatchEvent(keydownEvent);
+}
+// enter -> focus
+// select -> enter select -> focus
+const focus = () => {
+  if (dom.value) {
+    if (dom.value.focus) {
+      dom.value.focus();
+    } else {
+      console.log('props.field.dataIndex--->',props.field.dataIndex);
+      let focusableElement = document
+        .querySelector("#" + props.field.dataIndex)
+        ?.querySelector("input");
+      if (focusableElement && focusableElement.focus) {
+        focusableElement.focus();
+        if (["select","date","time", "datetime"].includes(props.field.form.type)) {
+          console.log('popup-visible--->');
+          popupVisible.value = true;
+        }
+      }
+    }
+  }
+};
 
 defineExpose({
   clearSelectedKeys,
+  focus,
 });
 </script>
 
@@ -108,8 +227,10 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-input
+      :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      @keydown.enter="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
@@ -124,8 +245,10 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-input-number
+      :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      @keydown.enter="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
@@ -140,8 +263,10 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-textarea
+      :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      @keydown.enter="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
@@ -210,8 +335,11 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-select
+      :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      v-model:popup-visible="popupVisible"
+      @change="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     >
@@ -239,8 +367,11 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-date-picker
+      :ref="(ref) => (dom = ref)"
+      v-model:popup-visible="popupVisible"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      @change="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
@@ -255,8 +386,11 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-time-picker
+      :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      v-model:popup-visible="popupVisible"
+      @change="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
     />
@@ -271,8 +405,11 @@ defineExpose({
     :help="formErrors[field.dataIndex]"
   >
     <a-date-picker
+      :ref="(ref) => (dom = ref)"
       :model-value="formData[field.dataIndex]"
       @update:model-value="handleUpdate"
+      @change="handleEnter"
+       v-model:popup-visible="popupVisible"
       show-time
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"

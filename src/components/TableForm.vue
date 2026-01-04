@@ -1,6 +1,6 @@
 <script setup>
 import TableFormFieldItem from "./TableFormFieldItem.vue";
-import { reactive, ref, computed, onMounted, watch } from "vue";
+import { reactive, ref, computed, onMounted, watch, nextTick } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 
 // Props 定义
@@ -83,6 +83,7 @@ const state = reactive({
   formLoading: false, // 提交中
   formErrors: {}, // 表单错误
   refMap: {}, // 每一个表单的 ref引用
+  fieldRefMap: {}, // 字段组件的ref引用，用于focus
 });
 
 // 获取可见的表单字段（有 form 配置的字段）
@@ -105,6 +106,21 @@ const availableFields = computed(() => {
     }
   });
 });
+
+// 处理回车聚焦到下一个字段
+const handleEnterNext = (nextFieldIndex) => {
+  // 延迟执行，确保DOM已更新
+  nextTick(() => {
+    // 尝试从字段ref中获取焦点目标元素
+    const fieldComponent = state.fieldRefMap[nextFieldIndex];
+    console.log('fieldComponent--->',fieldComponent);
+    
+    if (fieldComponent) {
+      // 查找该组件内的input/select/textarea等可聚焦元素
+      fieldComponent.focus && fieldComponent.focus();
+    }
+  });
+};
 
 // 初始化表单数据
 const initializeFormData = () => {
@@ -377,10 +393,13 @@ defineExpose({
           <!-- 表单字段渲染（共用组件） -->
           <table-form-field-item
             :ref="
-              (re) =>
-                field?.form?.type === 'table'
-                  ? (state.refMap[field.dataIndex] = re)
-                  : null
+              (re) => {
+                if (field?.form?.type === 'table') {
+                  state.refMap[field.dataIndex] = re;
+                }else{
+                  state.fieldRefMap[field.dataIndex] = re;
+                }
+              }
             "
             :field="field"
             :form-data="state.formData"
@@ -392,6 +411,8 @@ defineExpose({
             @update:model-value="(val) => (state.formData[field.dataIndex] = val)"
             :selectedKeys="props.selectedKeys"
             @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
+            :all-fields="availableFields"
+            :on-enter-next="handleEnterNext"
           />
         </a-grid-item>
       </a-grid>
@@ -409,7 +430,15 @@ defineExpose({
         <!-- 表单字段渲染（共用组件） -->
         <!-- selectedKeys 父级选中的行 -->
         <table-form-field-item
-          :ref="(re) => (state.refMap[field.dataIndex] = re)"
+          :ref="
+            (re) => {
+             if (field?.form?.type === 'table') {
+                  state.refMap[field.dataIndex] = re;
+                }else{
+                  state.fieldRefMap[field.dataIndex] = re;
+                }
+            }
+          "
           :field="field"
           :form-data="state.formData"
           :form-errors="state.formErrors"
@@ -420,6 +449,8 @@ defineExpose({
           @update:model-value="(val) => (state.formData[field.dataIndex] = val)"
           :selectedKeys="props.selectedKeys"
           @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
+          :all-fields="availableFields"
+          :on-enter-next="handleEnterNext"
         />
       </template>
     </a-form>
