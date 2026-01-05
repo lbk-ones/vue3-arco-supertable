@@ -2,7 +2,7 @@
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
 import { reactive, ref, computed, watch } from "vue";
-import { Col, Message } from "@arco-design/web-vue";
+import { Message } from "@arco-design/web-vue";
 import SuperTable from "./Table.vue";
 import { del, post, put } from "../request.js";
 const tableRef = ref(null);
@@ -534,13 +534,16 @@ const tableConfig = reactive({
   pageSizeOptions: [5, 10, 20, 50],
 
   // 后端分页配置（如果使用后端分页）
-  apiUrl: "/pd/employees/pageQueryEmployees",
+  pageApiUrl: "/pd/employees/pageQueryEmployees",
 
   // 后端表单新增接口地址
   formAddApiUrl: "/pd/employees/saveEmployees",
 
   // 后端表单更新的接口地址
   formUpdateApiUrl: "/pd/employees/updateEmployees",
+
+  // 后端表格删除接口
+  formDeleteApiUrl: "/pd/employees/deleteEmployees",
 
   // 操作按钮配置
   actions: [
@@ -549,25 +552,98 @@ const tableConfig = reactive({
       label: "查看",
       icon: "eye",
       message: "查看成功",
+      type: "outline",
       // 查看操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
     {
       key: "edit",
       label: "编辑",
       icon: "edit",
+      type: "outline",
       // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
     {
       key: "delete",
       label: "删除",
-      status: "danger",
-      type: "confirm",
-      confirmMessage: "确定要删除选中的数据吗？",
+      status: "danger", // 按钮成红色危险状态 normal - 正常（默认）、success - 成功、warning - 警告、danger - 危险
+      type: "confirm", // 弹出提示框 confirm === 次级按钮  主要按钮、次级按钮、虚框按钮、文字按钮、线性按钮，default 为次级按钮。
+      confirmMessage: "确定要删除选中的数据吗？", // type === confirm 的提示语
       message: "删除成功",
-      apiUrl: "/pd/employees/deleteEmployees",
-      params: (records) => records?.map((r) => r[rowKeyName])?.join(",") ?? [],
+      apiUrl: null, // 当前这个操作要调用的api 会进入executeAction回调中的第一个参数action的apiUrl
+      params: null, // 处理之后进入executeAction处理,可以是函数|对象
+      attrs: null, // 透传属性或者事件可以写到一起
     },
   ],
+
+  // 是否显示列配置按钮
+  showColumnConfig: true,
+
+  // 表描述
+  cnDesc: "员工信息",
+
+  // 是否显示表单（新增/编辑）
+  showForm: true,
+
+  // 表格大小
+  tableSize: "small",
+
+  // 弹窗宽度
+  modalWidth: 1000,
+
+  // 表单布局
+  formLayout: "horizontal", // 表单布局 horizontal vertical
+
+  // 表单列数，4代表一行4列
+  formColumns: 4,
+
+  // 表格滚动配置
+  scroll: { x: 1200, y: "auto" },
+
+  // 是否显示选择列
+  selection: true,
+
+  // 表格样式配置
+  bordered: { cell: true }, // 边框配置：true=外框，{cell:true}=所有单元格边框
+
+  // 行悬停效果
+  hoverable: true,
+
+  // 列宽可拖拽调整
+  columnResizable: true,
+
+  // 斑马纹背景
+  stripe: false,
+
+  // 行唯一标识字段名
+  rowKey: rowKeyName, // 对应数据中的唯一标识字段，默认值为 'key'
+
+  // 显示表头
+  showHeader: true,
+
+  // 表格透传属性|事件
+  tableAttrs: {},
+
+  // hover 行背景颜色
+  hoverColor: "#eef5f8",
+
+  // hover 字体颜色
+  hoverFontColor: "",
+
+  // 表头字体颜色 （表头字体默认加粗 不做更改）
+  // headerFontColor:'#7f70a0',
+  headerFontColor: "",
+
+  // 表头背景颜色
+  headerBgColor: "#eef5f8",
+
+  // 是否显示多选框
+  selection: true,
+
+  // 分页透传属性|事件
+  tablePaginationAttrs: {
+    "hide-on-single-page": true,
+  },
+
   // 执行操作按钮的回调 edit 和 view 不会进入这个回调 因为它们是弹窗形式的操作
   executeAction: async (action, records, params) => {
     // records: 为选中的数据数组
@@ -586,7 +662,11 @@ const tableConfig = reactive({
         });
       } else {
         // 后端分页 删除逻辑
-        await del(action.apiUrl + "/" + params);
+        await del(
+          (action.apiUrl || tableConfig.formDeleteApiUrl) +
+            "/" +
+            records?.map((r) => r[rowKeyName])?.join(",")
+        );
       }
     }
   },
@@ -680,37 +760,6 @@ const tableConfig = reactive({
   handleColumnConfigChange: (config) => {
     console.log("列配置变化", config);
   },
-  // 是否显示列配置按钮
-  showColumnConfig: true,
-
-  // 是否显示表单（新增/编辑）
-  showForm: true,
-
-  // 表格大小
-  tableSize: "small",
-
-  // 弹窗宽度
-  modalWidth: 1000,
-
-  // 表单布局
-  formLayout: "horizontal", // 表单布局 horizontal vertical
-
-  // 表单列数，4代表一行4列
-  formColumns: 4,
-  // 滚动配置
-  scroll: { x: 1200, y: "auto" },
-
-  // 是否显示选择列
-  selection: true,
-
-  // 表格样式配置
-  bordered: { cell: true }, // 边框配置：true=外框，{cell:true}=所有单元格边框
-  hoverable: true, // 行悬停效果
-  columnResizable: true, // 列宽可拖拽调整
-  stripe: true, // 斑马纹背景
-
-  // 行唯一标识字段名
-  rowKey: rowKeyName, // 对应数据中的唯一标识字段，默认值为 'key'
 });
 
 const selectedKeys = ref([]);
@@ -779,9 +828,10 @@ const textareaValue = computed(() => {
           v-model:loading="loading"
           v-model:selectedKeys="selectedKeys"
         >
-          <template #toolbar>
-            <a-button type="secondary"> 导出 Excel </a-button>
-          </template>
+          <!-- <template #toolbar="{ size }">
+            <a-button type="secondary" :size="size"> 导入 </a-button>
+            <a-button type="secondary" :size="size"> 导出 </a-button>
+          </template> -->
 
           <template
             #phone-input="{

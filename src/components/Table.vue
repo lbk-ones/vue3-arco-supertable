@@ -1,10 +1,8 @@
 <script setup>
 import {
   reactive,
-  ref,
   computed,
   onMounted,
-  onBeforeUnmount,
   watch,
 } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
@@ -22,7 +20,7 @@ const props = defineProps({
     //   searchFields: [],               // 搜索字段
     //   paginationType: 'backend' | 'frontend',  // 分页类型
     //   pageSize: 10,
-    //   apiUrl: '/api/list',            // 后端分页接口
+    //   pageApiUrl: '/api/list',            // 后端分页接口
     //   actions: [],                    // 操作按钮配置
     //   showColumnConfig: true,         // 是否显示列配置
     //   showForm: true,                 // 是否显示新增/编辑表单
@@ -240,9 +238,10 @@ const handleResetSearch = () => {
 
 // 获取后端数据
 const fetchData = async () => {
-  if (props.config.paginationType !== "backend" || !props.config.apiUrl) return;
+  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
+    return;
   try {
-    let data = await props.config?.pageFetchData?.(props.config.apiUrl, {
+    let data = await props.config?.pageFetchData?.(props.config.pageApiUrl, {
       pageNo: state.currentPage,
       pageSize: state.pageSize,
       searchValues: state.searchValues,
@@ -287,6 +286,7 @@ const getKeyName = () => {
 
 // 行点击事件
 const handleRowClick = (record) => {
+  if (props.config.selection === false) return;
   const key = record[getKeyName()];
   let selectKeys = [...props.selectedKeys];
   const index = selectKeys.findIndex((e) => e === key);
@@ -358,7 +358,14 @@ const handleActionClick = (action) => {
 // 执行callback回调
 const executeAction = async (action, records) => {
   if (props.config.executeAction) {
-    let params = action.params && action.params(records);
+    let params = records;
+    if (action.params) {
+      if (typeof action.params === "function") {
+        params = action.params(records);
+      } else {
+        params = action.params;
+      }
+    }
     await props.config.executeAction(action, records, params);
     await fetchData();
     // emit("action-click", {
@@ -528,17 +535,24 @@ defineExpose({
 <template>
   <div
     :class="
-      isFormItem ? 'arco-table-container-form-item' : 'arco-table-container'
+      isFormItem
+        ? 'bk-supertable arco-table-container-form-item'
+        : 'bk-supertable arco-table-container'
     "
   >
     <!-- 操作工具栏 -->
-    <div class="table-toolbar" style="margin-bottom: 16px">
+    <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
+        <span
+          style="font-weight: 700; font-size: 1rem"
+          v-if="!!config.cnDesc"
+          >{{ config.cnDesc || "" }}</span
+        >
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
-          type="primary"
+          type="outline"
           @click="openCreateForm"
           style="margin-right: 8px"
           :size="config.tableSize || 'small'"
@@ -552,48 +566,58 @@ defineExpose({
           <a-button
             v-for="action in config.actions"
             :key="action.key"
-            :type="action.type === 'confirm' ? 'secondary' : 'primary'"
+            :type="
+              action.type === 'confirm'
+                ? 'secondary'
+                : action.type
+                ? action.type
+                : 'secondary'
+            "
             :status="action.status"
             :disabled="props.selectedKeys.length === 0 || props.tableDisabled"
             :size="config.tableSize || 'small'"
             @click="handleActionClick(action)"
             style="margin-right: 8px"
+            v-bind="action.attrs || {}"
+            v-on="action.attrs || {}"
           >
-            {{ action.label }}（{{ props.selectedKeys.length }}）
+            {{ action.label }}
           </a-button>
         </a-button-group>
       </div>
 
       <!-- 右侧：搜索、列配置和导出按钮 -->
       <div class="tools-area">
-        <icon-refresh
-          class="hover-point"
-          :style="{ fontSize: '20px' }"
-          @click="fetchData"
-          :spin="loading"
-        />
-        <!-- 搜索按钮 -->
         <a-button
           v-if="config.searchFields"
-          type="secondary"
-          @click="state.visibleSearchBar = !state.visibleSearchBar"
-          style="margin-right: 8px"
+          type="outline"
+          @click="fetchData"
           :size="config.tableSize || 'small'"
         >
-          🔍 搜索
+          <icon-refresh :spin="loading" />
+        </a-button>
+
+        <!-- 搜索按钮 🔍 -->
+        <a-button
+          v-if="config.searchFields"
+          type="outline"
+          @click="state.visibleSearchBar = !state.visibleSearchBar"
+          :size="config.tableSize || 'small'"
+        >
+          <IconSearch />
         </a-button>
 
         <!-- 列配置按钮 -->
         <a-button
           v-if="config.showColumnConfig"
-          type="secondary"
+          type="outline"
           @click="state.visibleColumnModal = true"
-          style="margin-right: 8px"
           :size="config.tableSize || 'small'"
         >
-          列配置
+          <IconSettings />
         </a-button>
-        <slot name="toolbar" />
+
+        <slot name="toolbar" :size="config.tableSize || 'small'" />
       </div>
     </div>
 
@@ -601,7 +625,7 @@ defineExpose({
     <div
       v-if="config.searchFields && state.visibleSearchBar"
       class="search-bar-expanded"
-      style="margin-bottom: 16px"
+      style="margin-bottom: 10px"
     >
       <div class="search-wrapper">
         <div class="search-area">
@@ -621,8 +645,9 @@ defineExpose({
                 :placeholder="field.placeholder || `搜索${field.title}`"
                 allow-clear
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @search="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -633,8 +658,9 @@ defineExpose({
                 :placeholder="field.placeholder || `搜索${field.title}`"
                 allow-clear
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -647,8 +673,9 @@ defineExpose({
                 allow-clear
                 allow-search
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -659,8 +686,9 @@ defineExpose({
                 v-model="state.searchValues[field.dataIndex]"
                 :options="getSearchOptions(field)"
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -670,8 +698,9 @@ defineExpose({
                 v-model="state.searchValues[field.dataIndex]"
                 :options="getSearchOptions(field)"
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -681,8 +710,9 @@ defineExpose({
                 v-model="state.searchValues[field.dataIndex]"
                 :placeholder="field.placeholder || `选择${field.title}`"
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -697,8 +727,9 @@ defineExpose({
                   ]
                 "
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
 
@@ -707,8 +738,9 @@ defineExpose({
               <a-switch
                 v-model="state.searchValues[field.dataIndex]"
                 :size="config.tableSize || 'small'"
-                v-bind="field.attrs || {}"
                 @change="handleSearch"
+                v-bind="field.attrs || {}"
+                v-on="field.attrs || {}"
               />
             </template>
           </div>
@@ -720,13 +752,19 @@ defineExpose({
             type="primary"
             @click="handleSearch"
           >
-            🔍 搜索
+            🔍搜索
           </a-button>
           <a-button
             :size="config.tableSize || 'small'"
             @click="handleResetSearch"
           >
             重置
+          </a-button>
+          <a-button
+            :size="config.tableSize || 'small'"
+            @click="() => (state.visibleSearchBar = false)"
+          >
+            关闭
           </a-button>
         </div>
       </div>
@@ -754,20 +792,27 @@ defineExpose({
       :loading="loading"
       :column-resizable="config.columnResizable !== false"
       :stripe="config.stripe !== false"
+      :show-header="config.showHeader !== false"
+      v-bind="config.tableAttrs || {}"
+      v-on="config.tableAttrs || {}"
+      :style="{
+        '--color-fill-1': config.hoverColor || '#F2F3F5',
+        '--hover-font-color': config.hoverFontColor || 'rgb(var(--gray-10))',
+        '--header-bg-color': config.headerBgColor || 'var(--color-neutral-2)',
+        '--header-font-color': config.headerFontColor || 'rgb(var(--gray-10))',
+      }"
     >
       <!-- 状态列插槽 -->
-      <template #status-cell="{ record,column }">
+      <template #status-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
-              record[column.dataIndex]
-            ]?.color || 'blue'
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+              ?.statusMap?.[record[column.dataIndex]]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
-              record[column.dataIndex]
-            ]?.label || record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+              ?.statusMap?.[record[column.dataIndex]]?.label || record.status
           }}
         </a-tag>
       </template>
@@ -801,6 +846,9 @@ defineExpose({
         show-page-size
         @change="handlePageChange"
         @page-size-change="handlePageSizeChange"
+        :hide-on-single-page="true"
+        v-bind="config.tablePaginationAttrs || {}"
+        v-on="config.tablePaginationAttrs || {}"
       />
     </div>
 
@@ -901,7 +949,11 @@ defineExpose({
         <template #item="{ item, index }">
           <a-list-item>
             <template #extra>
-              <a-button type="primary" size="small" @click="selectRecord(item)">
+              <a-button
+                type="outline"
+                :size="config.tableSize || 'small'"
+                @click="selectRecord(item)"
+              >
                 {{ state.viewListMode === "edit" ? "编辑" : "查看" }}
               </a-button>
             </template>
@@ -945,7 +997,11 @@ defineExpose({
       @success="handleFormSuccess"
     >
       <template v-for="fm in visibleColumns" #[fm?.form?.slotName]="slotProps">
-        <slot :name="fm?.form?.slotName" v-bind="slotProps" v-if="fm?.form?.slotName"></slot>
+        <slot
+          :name="fm?.form?.slotName"
+          v-bind="slotProps"
+          v-if="fm?.form?.slotName"
+        ></slot>
       </template>
     </TableForm>
   </div>
@@ -1028,6 +1084,7 @@ defineExpose({
 .action-area {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .tools-area {
@@ -1121,5 +1178,17 @@ defineExpose({
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.bk-supertable :deep(.arco-table-th) {
+  font-weight: 700;
+  /* color: #7f70a0; */
+  /* background-color: #eef5f8; */
+  background-color: var(--header-bg-color);
+  color: var(--header-font-color);
+}
+
+.bk-supertable :deep(.arco-table-tr:hover .arco-table-td) {
+  color: var(--hover-font-color) !important;
 }
 </style>

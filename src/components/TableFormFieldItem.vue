@@ -209,6 +209,7 @@ defineExpose({
       @keydown.enter="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -227,6 +228,7 @@ defineExpose({
       @keydown.enter="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -244,6 +246,7 @@ defineExpose({
       @update:model-value="handleUpdate"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -258,6 +261,7 @@ defineExpose({
       @update:model-value="handleUpdate"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     >
       <a-checkbox
         v-for="option in getOptions(field)"
@@ -285,6 +289,7 @@ defineExpose({
       @update:model-value="handleUpdate"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     >
       <a-radio
         v-for="option in getOptions(field)"
@@ -317,6 +322,7 @@ defineExpose({
       @change="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     >
       <a-option
         v-for="option in getOptions(field)"
@@ -349,6 +355,7 @@ defineExpose({
       @change="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -368,6 +375,7 @@ defineExpose({
       @change="handleEnter"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -388,6 +396,7 @@ defineExpose({
       show-time
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -402,6 +411,7 @@ defineExpose({
       @update:model-value="handleUpdate"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
@@ -416,6 +426,7 @@ defineExpose({
       @update:model-value="handleUpdate"
       :disabled="isFieldDisabled(field)"
       v-bind="getFieldAttrs(field)"
+      v-on="getFieldAttrs(field)"
     />
   </a-form-item>
 
