@@ -3,6 +3,7 @@ import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
 import { reactive, ref, computed, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
+import TableConfigEditor from "../TableConfigEditor.vue";
 import SuperTable from "./Table.vue";
 import { del, post, put } from "../request.js";
 const tableRef = ref(null);
@@ -156,6 +157,7 @@ const tableConfig = reactive({
       visible: true,
       ellipsis: true,
       fixed: "left",
+      align: "left",
       sortable: {
         compare: (a, b) => a.localeCompare(b),
       },
@@ -198,7 +200,7 @@ const tableConfig = reactive({
       dataIndex: "salary",
       width: 100,
       visible: true,
-      align: "right",
+      align: "left",
       sortable: {
         compare: (a, b) => a - b,
       },
@@ -526,6 +528,18 @@ const tableConfig = reactive({
         step: 1000,
       },
     },
+    {
+      dataIndex: "joinDate",
+      title: "加入时间",
+      type: "date-range",
+    },
+    {
+      dataIndex: "salary",
+      title: "测试slot",
+      type: "slot",
+      slotName: "slot-test",
+      placeholder: "输入薪资",
+    },
   ],
 
   // 分页类型：frontend（前端分页）或 backend（后端分页）
@@ -730,8 +744,7 @@ const tableConfig = reactive({
       console.log("编辑数据:", data);
       if (config.paginationType === "frontend") {
         const index = tableData.value.findIndex(
-          (item) =>
-            item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
         );
         if (index !== -1) {
           tableData.value[index] = {
@@ -772,14 +785,14 @@ watch(
   }
 );
 
+const showConfig = ref(false);
 /**
  * 切换分页类型（演示）
  */
 const paginationType = ref("frontend");
 
 const switchPaginationType = () => {
-  paginationType.value =
-    paginationType.value === "frontend" ? "backend" : "frontend";
+  paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
   tableConfig.paginationType = paginationType.value;
   if (tableConfig.paginationType === "backend") {
     // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
@@ -794,9 +807,7 @@ const switchPaginationType = () => {
   } else {
     window.location.reload();
   }
-  Message.info(
-    `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
-  );
+  Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
 };
 const textareaValue = computed(() => {
   return JSON.parse(JSON.stringify(tableConfig, null, 8));
@@ -808,23 +819,23 @@ const textareaValue = computed(() => {
     <a-col :span="16">
       <div class="example-container">
         <h1
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-          "
+          style="display: flex; align-items: center; justify-content: center; gap: 10px"
         >
           基于Arco的超级表格组件示例
           <a-button type="outline" size="large" @click="switchPaginationType"
             >切换分页模式（当前：{{ paginationType }}）</a-button
           >
+
+          <a-button type="outline" size="large" @click="() => (showConfig = true)"
+            >配置编辑</a-button
+          >
         </h1>
-        <!-- 使用通用表格组件 -->
+        <!-- 使用通用表格组件 :config="tableConfig" v-model:data="tableData" -->
+
         <SuperTable
-          :ref="(ref) => (tableRef = ref)"
           :config="tableConfig"
           v-model:data="tableData"
+          :ref="(ref) => (tableRef = ref)"
           v-model:loading="loading"
           v-model:selectedKeys="selectedKeys"
         >
@@ -834,14 +845,7 @@ const textareaValue = computed(() => {
           </template> -->
 
           <template
-            #phone-input="{
-              domRef,
-              field,
-              formData,
-              disabled,
-              attrs,
-              handleEnter,
-            }"
+            #phone-input="{ domRef, field, formData, disabled, attrs, handleEnter }"
           >
             <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
             <a-space :size="8">
@@ -858,9 +862,7 @@ const textareaValue = computed(() => {
           </template>
 
           <!-- 其实预留了这个组件的 这里只是做个测试而已 -->
-          <template
-            #enable-switch="{ field, formData, disabled, attrs, handleUpdate }"
-          >
+          <template #enable-switch="{ field, formData, disabled, attrs, handleUpdate }">
             <a-space :size="8">
               <a-switch
                 :model-value="formData[field.dataIndex]"
@@ -869,6 +871,17 @@ const textareaValue = computed(() => {
                 v-bind="attrs"
               />
             </a-space>
+          </template>
+          <template #slot-test="{ field, state, config, handleSearch }">
+            <a-input-search
+              v-model="state.searchValues[field.dataIndex]"
+              :placeholder="field.placeholder || `搜索${field.title}`"
+              allow-clear
+              :size="config.tableSize || 'small'"
+              @search="handleSearch"
+              v-bind="field.attrs || {}"
+              v-on="field.attrs || {}"
+            />
           </template>
         </SuperTable>
       </div>
@@ -885,6 +898,15 @@ const textareaValue = computed(() => {
       </div>
     </a-col>
   </a-row>
+
+  <a-drawer
+    :width="'50%'"
+    v-model:visible="showConfig"
+    title="表格配置编辑器"
+    :footer="false"
+  >
+    <TableConfigEditor :config="tableConfig" />
+  </a-drawer>
 </template>
 
 <style scoped>

@@ -1,10 +1,5 @@
 <script setup>
-import {
-  reactive,
-  computed,
-  onMounted,
-  watch,
-} from "vue";
+import { reactive, computed, onMounted, watch } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 
@@ -34,6 +29,102 @@ const props = defineProps({
     //   stripe: false,                  // 是否显示斑马纹
     //   pageSizeOptions: [10,20,50,100],// 分页选项
     // }
+    default: () => {
+      return {
+        // 列配置
+        columns: [],
+        // 搜索字段配置
+        searchFields: [],
+        // 分页类型：frontend（前端分页）或 backend（后端分页）
+        paginationType: "frontend",
+        pageSize: 10,
+        pageSizeOptions: [5, 10, 20, 50],
+
+        // 后端分页配置（如果使用后端分页）
+        pageApiUrl: "",
+
+        // 后端表单新增接口地址
+        formAddApiUrl: "",
+
+        // 后端表单更新的接口地址
+        formUpdateApiUrl: "",
+
+        // 后端表格删除接口
+        formDeleteApiUrl: "",
+
+        // 操作按钮配置
+        actions: [],
+
+        // 是否显示列配置按钮
+        showColumnConfig: true,
+
+        // 表描述
+        cnDesc: "超级表格",
+
+        // 是否显示表单（新增/编辑）
+        showForm: true,
+
+        // 表格大小
+        tableSize: "small",
+
+        // 弹窗宽度
+        modalWidth: 1000,
+
+        // 表单布局
+        formLayout: "horizontal", // 表单布局 horizontal vertical
+
+        // 表单列数，4代表一行4列
+        formColumns: 4,
+
+        // 表格滚动配置
+        scroll: { x: 1200, y: "auto" },
+
+        // 是否显示选择列
+        selection: true,
+
+        // 表格样式配置
+        bordered: { cell: true }, // 边框配置：true=外框，{cell:true}=所有单元格边框
+
+        // 行悬停效果
+        hoverable: true,
+
+        // 列宽可拖拽调整
+        columnResizable: true,
+
+        // 斑马纹背景
+        stripe: false,
+
+        // 行唯一标识字段名
+        rowKey: "key", // 对应数据中的唯一标识字段，默认值为 'key'
+
+        // 显示表头
+        showHeader: true,
+
+        // 表格透传属性|事件
+        tableAttrs: {},
+
+        // hover 行背景颜色
+        hoverColor: "#eef5f8",
+
+        // hover 字体颜色
+        hoverFontColor: "",
+
+        // 表头字体颜色 （表头字体默认加粗 不做更改）
+        // headerFontColor:'#7f70a0',
+        headerFontColor: "",
+
+        // 表头背景颜色
+        headerBgColor: "#eef5f8",
+
+        // 是否显示多选框
+        selection: true,
+
+        // 分页透传属性|事件
+        tablePaginationAttrs: {
+          "hide-on-single-page": true,
+        },
+      };
+    },
   },
   // 表格数据（前端分页或初始数据）
   data: {
@@ -150,9 +241,7 @@ const getFilteredData = () => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find(
-          (f) => f.dataIndex === field
-        );
+        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -160,9 +249,7 @@ const getFilteredData = () => {
         switch (fieldType) {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
-              const itemValue = Array.isArray(fieldValue)
-                ? fieldValue
-                : [fieldValue];
+              const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
               return value.some((v) => itemValue.includes(v));
             }
             return true;
@@ -171,9 +258,7 @@ const getFilteredData = () => {
             if (Array.isArray(value) && value.length === 2) {
               const [startDate, endDate] = value;
               const itemDate = new Date(fieldValue);
-              return (
-                itemDate >= new Date(startDate) && itemDate <= new Date(endDate)
-              );
+              return itemDate >= new Date(startDate) && itemDate <= new Date(endDate);
             }
             return true;
 
@@ -238,8 +323,7 @@ const handleResetSearch = () => {
 
 // 获取后端数据
 const fetchData = async () => {
-  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
-    return;
+  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl) return;
   try {
     let data = await props.config?.pageFetchData?.(props.config.pageApiUrl, {
       pageNo: state.currentPage,
@@ -544,11 +628,9 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span
-          style="font-weight: 700; font-size: 1rem"
-          v-if="!!config.cnDesc"
-          >{{ config.cnDesc || "" }}</span
-        >
+        <span style="font-weight: 700; font-size: 1rem" v-if="!!config.cnDesc">{{
+          config.cnDesc || ""
+        }}</span>
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
@@ -651,6 +733,19 @@ defineExpose({
               />
             </template>
 
+            <!-- slot -->
+            <template v-if="field.type === 'slot' && field.slotName">
+              <slot
+                :name="field.slotName"
+                :field="field"
+                :state="state"
+                :config="config"
+                :handleSearch="handleSearch"
+              >
+                <div style="color: red">请提供 {{ field.slotName }} 插槽</div>
+              </slot>
+            </template>
+
             <!-- 数字输入框搜索 -->
             <template v-else-if="field.type === 'number'">
               <a-input-number
@@ -721,10 +816,7 @@ defineExpose({
               <a-range-picker
                 v-model="state.searchValues[field.dataIndex]"
                 :placeholder="
-                  field.placeholder || [
-                    `${field.title}开始日期`,
-                    `${field.title}结束日期`,
-                  ]
+                  field.placeholder || [`${field.title}开始`, `${field.title}结束`]
                 "
                 :size="config.tableSize || 'small'"
                 @change="handleSearch"
@@ -749,18 +841,20 @@ defineExpose({
         <div class="search-buttons">
           <a-button
             :size="config.tableSize || 'small'"
-            type="primary"
+            type="outline"
             @click="handleSearch"
           >
-            🔍搜索
+            搜索
           </a-button>
           <a-button
+            type="outline"
             :size="config.tableSize || 'small'"
             @click="handleResetSearch"
           >
             重置
           </a-button>
           <a-button
+            type="outline"
             :size="config.tableSize || 'small'"
             @click="() => (state.visibleSearchBar = false)"
           >
@@ -806,13 +900,15 @@ defineExpose({
       <template #status-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-              ?.statusMap?.[record[column.dataIndex]]?.color || 'blue'
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
+              record[column.dataIndex]
+            ]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-              ?.statusMap?.[record[column.dataIndex]]?.label || record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
+              record[column.dataIndex]
+            ]?.label || record.status
           }}
         </a-tag>
       </template>
@@ -833,10 +929,7 @@ defineExpose({
 
     <!-- 分页 -->
     <div v-if="config.paginationType !== 'none'" class="table-pagination">
-      <span
-        >共 {{ totalCount }} 条数据，已选择
-        {{ props.selectedKeys.length }} 条</span
-      >
+      <span>共 {{ totalCount }} 条数据，已选择 {{ props.selectedKeys.length }} 条</span>
       <a-pagination
         :current="state.currentPage"
         :page-size="state.pageSize"
@@ -887,9 +980,7 @@ defineExpose({
           <div
             class="col-name"
             :class="{
-              'col-name-highlighted': state.highlightedColumns.has(
-                col.dataIndex
-              ),
+              'col-name-highlighted': state.highlightedColumns.has(col.dataIndex),
             }"
             :title="col.title"
           >
@@ -936,9 +1027,7 @@ defineExpose({
     <!-- 多条记录选择弹窗 -->
     <a-modal
       :visible="state.viewListVisible"
-      :title="
-        state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'
-      "
+      :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
       @update:visible="(val) => (state.viewListVisible = val)"
       :ok-text="null"
       :cancel-text="null"

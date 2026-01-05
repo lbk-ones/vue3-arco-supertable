@@ -1,14 +1,6 @@
 <script setup>
 import TableFormFieldItem from "./TableFormFieldItem.vue";
-import {
-  reactive,
-  ref,
-  computed,
-  onMounted,
-  watch,
-  nextTick,
-  toRaw,
-} from "vue";
+import { reactive, ref, computed, onMounted, watch, nextTick, toRaw } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 
 // Props 定义
@@ -362,16 +354,17 @@ watch(
   () => {
     if (props.visible) {
       initializeFormData();
-      let fitem = availableFields.value?.find(e=>{
-        if(e.form && e.form.type){
-          return supportEnterTypes.includes(e.form.type)
-        }
-        return false;
-      }) ?? null;
+      let fitem =
+        availableFields.value?.find((e) => {
+          if (e.form && e.form.type) {
+            return supportEnterTypes.includes(e.form.type);
+          }
+          return false;
+        }) ?? null;
       if (fitem && fitem.dataIndex) {
-        nextTick(()=>{
+        if (!["select", "date", "time", "datetime"].includes(fitem?.form?.type)) {
           handleEnterNext(fitem.dataIndex);
-        })
+        }
       }
     }
   },
@@ -388,11 +381,7 @@ defineExpose({
   <a-modal
     :visible="visible"
     :title="
-      mode === 'create'
-        ? '新增记录'
-        : mode === 'readonly'
-        ? '查看详情'
-        : '编辑记录'
+      mode === 'create' ? '新增记录' : mode === 'readonly' ? '查看详情' : '编辑记录'
     "
     @update:visible="(val) => $emit('update:visible', val)"
     :ok-text="mode === 'readonly' ? '关闭' : '确定'"
@@ -448,14 +437,12 @@ defineExpose({
             :get-options="getOptions"
             :get-field-attrs="getFieldAttrs"
             :model-value="state.formData[field.dataIndex]"
-            @update:model-value="
-              (val) => (state.formData[field.dataIndex] = val)
-            "
+            @update:model-value="(val) => (state.formData[field.dataIndex] = val)"
             :selectedKeys="props.selectedKeys"
             @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
             :all-fields="availableFields"
             :on-enter-next="handleEnterNext"
-             :supportEnterTypes="supportEnterTypes"
+            :supportEnterTypes="supportEnterTypes"
           >
             <template #[field.form.slotName]="slotProps">
               <slot :name="field.form.slotName" v-bind="slotProps"></slot>

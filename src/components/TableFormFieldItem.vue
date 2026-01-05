@@ -62,8 +62,6 @@ const formSelectedKeys = reactive({});
 const popupVisible = ref(false);
 const emit = defineEmits(["update:modelValue", "update:selectedKeys"]);
 
-
-
 // 获取下一个可聚焦的字段
 const getNextFocusableField = () => {
   if (!props.field.form?.enterNext || !props.allFields.length) {
@@ -80,9 +78,7 @@ const getNextFocusableField = () => {
   }
 
   // 从指定的dataIndex开始查找，跳过不支持回车的组件
-  let searchIndex = props.allFields.findIndex(
-    (f) => f.dataIndex === targetDataIndex
-  );
+  let searchIndex = props.allFields.findIndex((f) => f.dataIndex === targetDataIndex);
 
   if (searchIndex === -1) {
     return null;
@@ -141,16 +137,12 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     datas.push({
       ...data,
       _rowIndex: datas.length,
-      [props.field.form.tableConfig?.rowKey || "key"]: String(
-        Date.now() + Math.random()
-      ),
+      [props.field.form.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
     });
     handleUpdate(datas);
   } else if (mode == "edit") {
     let datas = props.formData[props.field.dataIndex];
-    const index = datas.findIndex(
-      (item) => item._rowIndex === record._rowIndex
-    );
+    const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
     if (index !== -1) {
       datas[index] = {
         ...datas[index],
@@ -172,9 +164,7 @@ const focus = () => {
         ?.querySelector("input");
       if (focusableElement && focusableElement.focus) {
         focusableElement.focus();
-        if (
-          ["select", "date", "time", "datetime"].includes(props.field.form.type)
-        ) {
+        if (["select", "date", "time", "datetime"].includes(props.field.form.type)) {
           popupVisible.value = true;
         }
       }
