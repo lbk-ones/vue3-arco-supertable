@@ -670,6 +670,9 @@ const tableConfig = reactive({
   // 是否启用右键菜单
   contextMenuEnabled: true,
 
+  // 是否直接显示搜索条件,true代表直接显示搜索条件（移除掉搜索按钮和关闭按钮）,false代表点击搜索按钮才显示
+  showSearchBar: false,
+
   // 执行操作按钮的回调 edit 和 view 不会进入这个回调 因为它们是弹窗形式的操作
   executeAction: async (action, records, params) => {
     // records: 为选中的数据数组

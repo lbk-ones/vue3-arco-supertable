@@ -250,7 +250,7 @@ const validateForm = () => {
 
     // 自定义验证
     if (formConfig.validator) {
-      const error = formConfig.validator(value, field);
+      const error = formConfig.validator(value, field, props.mode);
       if (error) {
         state.formErrors[field.dataIndex] = error;
         isValid = false;

@@ -21,9 +21,9 @@
 
 ---
 
-## 2. tableConfig 配置详解
+## 2. config 配置详解
 
-`tableConfig` 是组件的核心配置对象，以下是完整参数说明：
+`config` 是组件的核心配置对象，以下是完整参数说明：
 
 ### 2.1 基础外观与交互 (UI/UX)
 
@@ -41,6 +41,8 @@
 | `showColumnConfig` | `Boolean` | `true` | 是否显示右上角的列设置按钮 |
 | `scroll` | `Object` | `{ x: 1200, y: 'auto' }` | 滚动区域配置，如 `{ x: '100%', y: 400 }` |
 | `contextMenuEnabled` | `Boolean` | `true` | 是否启用表格行右键菜单功能 |
+| `showSearchBar` | `Boolean` | `false` | 是否直接显示搜索条件,true代表直接显示搜索条件（移除掉搜索按钮和关闭按钮）,false代表点击搜索按钮才显示 |
+
 ### 2.2 表单与弹窗配置 (Form & Modal)
 
 | 参数 | 类型 | 默认值 | 说明 |
@@ -101,7 +103,7 @@ columns: [
       compare: (a, b) => a.localeCompare(b)
     },
     slotName: 'name-cell',  // 自定义单元格插槽名（可选）
-    // 如果要显示tag，比如状态字段 当slotName = status-cell 才生效 这是个预留插槽
+    // 如果要显示tag，比如状态字段 当columns.[].slotName = status-cell 才生效 这是个预留插槽
     statusMap: {
       active: { label: "在职", color: "green" },
       inactive: { label: "离职", color: "red" },
@@ -109,12 +111,16 @@ columns: [
     // 表单配置（用于新增/编辑弹窗） 没有这个字段就代表弹窗里面不会出现这个字段
     form: {
       type: 'input',        // 控件类型：input, select, number, date, radio, switch, textarea, slot, table
-      slotName: 'name-form',// 自定义表单插槽名（可选）当type=slot的时候必填
+      slotName: 'name-form',// 自定义表单插槽名（可选）当columns.[].form.type === slot 的时候必填
       creatable: true,      // 新增时是否显示
       editable: true,       // 编辑时是否显示
       required: true,       // 是否必填
       placeholder: '请输入',
       enterNext: 'age',     // 回车后跳转到的下一个字段名（提升录入体验）
+      oneRow: true,         // 表单是否独占一行
+      columns: 0,           // 这个表单项所占列数 0代表不生效
+      disabled: ( formData, field ) => formData.status === 'inactive', // 是否禁用可以是函数返回布尔值也可以直接是布尔值
+      validator: ( value, field, mode ) => { return '参数不合法' }, // 表单验证的时候使用的校验函数，返回错误信息字符串或空字符串表示通过
       attrs: {              // 透传给 Arco 组件的属性或者事件
         'max-length': 50
       },
@@ -127,9 +133,9 @@ columns: [
 ]
 ```
 
-### 2.5 搜索配置 (searchFields)
+### 2.7 搜索配置 (searchFields)
 
-定义表格顶部的搜索栏。
+`searchFields` 定义表格顶部的搜索栏。
 
 ```javascript
 searchFields: [
@@ -159,9 +165,9 @@ searchFields: [
 ]
 ```
 
-### 2.6 操作按钮 (actions)
+### 2.8 操作按钮 (actions)
 
-定义表格左上角的操作按钮。
+`actions` 定义表格左上角的操作按钮。
 
 ```javascript
 actions: [
@@ -286,6 +292,8 @@ searchFields: [{ dataIndex: 'custom', type: 'slot', slotName: 'custom-search' }]
 *   列的显示/隐藏状态
 *   列的顺序 (拖拽排序)
 *   列的宽度 (拖拽调整)
+*   列是否固定 (fixed)
+*   列超长是否显示... (overflowTooltip)
 
 组件加载时会自动合并：`最新本地配置` > `初始本地配置` > `代码默认配置`。
 列配置弹窗中提供了“重置”按钮，可一键恢复到初始状态。

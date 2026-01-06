@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, computed,onUnmounted, onMounted, watch, ref } from "vue";
+import { reactive, computed, onUnmounted, onMounted, watch, ref } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 import TableInfo from "./TableInfo.vue";
@@ -127,18 +127,21 @@ const props = defineProps({
         tablePaginationAttrs: {
           "hide-on-single-page": true,
         },
-        
-         // 表格唯一标识 (必填，开启本地存储时需要)
+
+        // 表格唯一标识 (必填，开启本地存储时需要)
         uniqueId: "",
 
         // 用户自定义代码 (可选，用于区分不同用户配置)
         userCode: "",
 
         // 是否启用本地存储
-        enableLocalStorage: false, 
+        enableLocalStorage: false,
 
         // 是否启用右键菜单
         contextMenuEnabled: true,
+
+        // 是否直接显示搜索条件
+        showSearchBar: true,
       };
     },
   },
@@ -535,12 +538,14 @@ const handleResetSearch = () => {
 const fetchData = async () => {
   if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
     return;
+  let loading = false;
   try {
     let data = await props.config?.pageFetchData?.(props.config.pageApiUrl, {
       pageNo: state.currentPage,
       pageSize: state.pageSize,
       searchValues: state.searchValues,
     });
+    loading = true;
     emit("update:loading", false);
     let records = data?.records || [];
     emit("update:data", records);
@@ -548,6 +553,8 @@ const fetchData = async () => {
     state.totalCount = parseInt(data?.total || 0);
   } catch (error) {
     Message.error("数据加载失败");
+  } finally {
+    if (loading === false) emit("update:loading", false);
   }
 };
 
@@ -599,17 +606,17 @@ const handleRowClick = (record) => {
 // 右键菜单处理
 const handleRowContextMenu = (record, event) => {
   if (props.config.contextMenuEnabled === false) return;
-  
+
   event.preventDefault();
-  
+
   // 选中当前行
   const key = record[getKeyName()];
   emit("update:selectedKeys", [key]);
-  
+
   // 设置菜单位置和显示
   state.contextMenuPosition = {
     x: event.clientX,
-    y: event.clientY
+    y: event.clientY,
   };
   state.contextMenuRecord = record;
   state.contextMenuVisible = true;
@@ -623,24 +630,26 @@ const closeContextMenu = () => {
 // 监听全局点击关闭菜单
 const handleGlobalClick = () => closeContextMenu();
 const handleGlobalContextMenu = (e) => {
-  if (!e.target.closest('.arco-table-tr')) {
+  if (!e.target.closest(".arco-table-tr")) {
     closeContextMenu();
   }
 };
 
 onMounted(() => {
-  window.addEventListener('click', handleGlobalClick);
-  window.addEventListener('contextmenu', handleGlobalContextMenu);
+  window.addEventListener("click", handleGlobalClick);
+  window.addEventListener("contextmenu", handleGlobalContextMenu);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('click', handleGlobalClick);
-  window.removeEventListener('contextmenu', handleGlobalContextMenu);
+  window.removeEventListener("click", handleGlobalClick);
+  window.removeEventListener("contextmenu", handleGlobalContextMenu);
 });
 
 // 获取右键菜单可用的操作
 const contextMenuActions = computed(() => {
-  return (props.config.actions || []).filter(action => action.showInContextMenu !== false);
+  return (props.config.actions || []).filter(
+    (action) => action.showInContextMenu !== false
+  );
 });
 
 // 操作按钮点击（传递选中的行数组）
@@ -708,7 +717,19 @@ const executeAction = async (action, records) => {
         params = action.params;
       }
     }
-    await props.config.executeAction(action, records, params);
+    let config = {};
+    try {
+      config = JSON.parse(JSON.stringify(props.config));
+    } catch (error) {
+      console.error("配置解析错误:", error);
+      return;
+    }
+    try {
+      await props.config.executeAction(config, action, records, params);
+    } catch (error) {
+      console.error("操作执行错误:", error);
+      return;
+    }
     await fetchData();
     // emit("action-click", {
     //   actionKey: action.key,
@@ -941,7 +962,7 @@ defineExpose({
 
         <!-- 搜索按钮 🔍 -->
         <a-button
-          v-if="config.searchFields"
+          v-if="config.searchFields && !config.showSearchBar"
           type="outline"
           @click="state.visibleSearchBar = !state.visibleSearchBar"
           :size="config.tableSize || 'small'"
@@ -973,7 +994,10 @@ defineExpose({
 
     <!-- 搜索条件展开区域 -->
     <div
-      v-if="config.searchFields && state.visibleSearchBar"
+      v-if="
+        (config.searchFields && state.visibleSearchBar) ||
+        (config.searchFields && config.showSearchBar === true)
+      "
       class="search-bar-expanded"
       style="margin-bottom: 10px"
     >
@@ -1107,30 +1131,30 @@ defineExpose({
               />
             </template>
           </div>
-        </div>
-
-        <div class="search-buttons">
-          <a-button
-            :size="config.tableSize || 'small'"
-            type="outline"
-            @click="handleSearch"
-          >
-            搜索
-          </a-button>
-          <a-button
-            type="outline"
-            :size="config.tableSize || 'small'"
-            @click="handleResetSearch"
-          >
-            重置
-          </a-button>
-          <a-button
-            type="outline"
-            :size="config.tableSize || 'small'"
-            @click="() => (state.visibleSearchBar = false)"
-          >
-            关闭
-          </a-button>
+          <div class="search-buttons">
+            <a-button
+              :size="config.tableSize || 'small'"
+              type="outline"
+              @click="handleSearch"
+            >
+              搜索
+            </a-button>
+            <a-button
+              type="outline"
+              :size="config.tableSize || 'small'"
+              @click="handleResetSearch"
+            >
+              重置
+            </a-button>
+            <a-button
+              v-if="config.showSearchBar !== true"
+              type="outline"
+              :size="config.tableSize || 'small'"
+              @click="() => (state.visibleSearchBar = false)"
+            >
+              关闭
+            </a-button>
+          </div>
         </div>
       </div>
     </div>
@@ -1232,7 +1256,14 @@ defineExpose({
       width="800px"
     >
       <!-- 搜索框 -->
-      <div style="margin-bottom: 16px; display: flex;justify-content: space-between; gap: 8px">
+      <div
+        style="
+          margin-bottom: 16px;
+          display: flex;
+          justify-content: space-between;
+          gap: 8px;
+        "
+      >
         <a-input-search
           v-model="state.columnSearchValue"
           placeholder="搜索列名..."
@@ -1392,10 +1423,7 @@ defineExpose({
       </template>
     </TableForm>
 
-    <TableInfo
-      v-model:visible="visibleTableInfo"
-      :config="config"
-    />
+    <TableInfo v-model:visible="visibleTableInfo" :config="config" />
 
     <!-- 右键菜单 -->
     <div
@@ -1416,7 +1444,7 @@ defineExpose({
         v-for="action in contextMenuActions"
         :key="action.key"
         class="context-menu-item"
-        :class="{ 'disabled': action.disabled }"
+        :class="{ disabled: action.disabled }"
         @click="!action.disabled && handleActionClick(action)"
       >
         {{ action.label }}
