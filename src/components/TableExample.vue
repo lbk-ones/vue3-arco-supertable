@@ -1,7 +1,7 @@
 <script setup>
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
-import { reactive, ref, computed, watch } from "vue";
+import { reactive, ref, computed, watch, h } from "vue";
 import { Message } from "@arco-design/web-vue";
 import TableConfigEditor from "./TableConfigEditor.vue";
 import SuperTable from "./Table.vue";
@@ -145,6 +145,7 @@ const tableData = ref([
     enable: true,
   },
 ]);
+const expandRowKeys = ref([]);
 // columns 的字段的宽度最好不要每个都写死，留一个自动计算，不然fixed会有问题的
 // 表格配置 - 前端分页示例
 const tableConfig = reactive({
@@ -587,6 +588,15 @@ const tableConfig = reactive({
       params: null, // 处理之后进入executeAction处理,可以是函数|对象
       attrs: null, // 透传属性或者事件可以写到一起
     },
+    {
+      key: "other",
+      label: "其他",
+      icon: "edit",
+      type: "outline",
+      needSelect: true,
+      isFetchData: false,
+      // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
+    },
   ],
 
   // 是否显示列配置按钮
@@ -674,12 +684,12 @@ const tableConfig = reactive({
   showSearchBar: false,
 
   // 执行操作按钮的回调 edit 和 view 不会进入这个回调 因为它们是弹窗形式的操作
-  executeAction: async (action, records, params) => {
+  executeAction: async (config, action, records, params) => {
     // records: 为选中的数据数组
     // action: 为当前这个操作对应的action对象
     // params: action params 方法 处理过后的参数
     if (action.key == "delete") {
-      if (tableConfig.paginationType === "frontend") {
+      if (config.paginationType === "frontend") {
         // 前端分页 删除逻辑
         records.forEach((record) => {
           const index = tableData.value.findIndex(
@@ -692,11 +702,15 @@ const tableConfig = reactive({
       } else {
         // 后端分页 删除逻辑
         await del(
-          (action.apiUrl || tableConfig.formDeleteApiUrl) +
+          (action.apiUrl || config.formDeleteApiUrl) +
             "/" +
             records?.map((r) => r[rowKeyName])?.join(",")
         );
       }
+    } else if (action.key === "expand") {
+      console.log("records--->", records);
+
+      expandRowKeys.value = records.map((record) => record[rowKeyName]);
     }
   },
   // API 请求（后端分页）

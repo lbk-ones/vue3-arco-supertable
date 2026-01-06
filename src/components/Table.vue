@@ -141,7 +141,7 @@ const props = defineProps({
         contextMenuEnabled: true,
 
         // 是否直接显示搜索条件
-        showSearchBar: true,
+        showSearchBar: false,
       };
     },
   },
@@ -652,6 +652,11 @@ const contextMenuActions = computed(() => {
   );
 });
 
+// 是否需要选择数据默认为true
+const isNeedSelect = (action) => {
+  return action.needSelect !== void 0 ? action.needSelect : true;
+}
+
 // 操作按钮点击（传递选中的行数组）
 const handleActionClick = (action) => {
   // 获取选中行对应的记录 - 从完整数据中查找
@@ -661,13 +666,14 @@ const handleActionClick = (action) => {
     .map((key) => sourceData.find((item) => item[getKeyName()] === key))
     .filter(Boolean);
 
-  if (selectedRecords.length === 0) {
+  let needSelect = isNeedSelect(action);
+  if (selectedRecords.length === 0 && needSelect) {
     Message.warning("请先选择数据");
     return;
   }
 
   // 编辑操作特殊处理
-  if (action.key === "edit") {
+  if (action.key === "edit" && needSelect) {
     if (selectedRecords.length === 1) {
       // 单条记录直接打开编辑表单
       openEditForm(selectedRecords[0]);
@@ -679,7 +685,7 @@ const handleActionClick = (action) => {
   }
 
   // 查看操作特殊处理
-  if (action.key === "view") {
+  if (action.key === "view" && needSelect) {
     if (selectedRecords.length === 1) {
       // 单条记录直接打开只读表单
       openViewForm(selectedRecords[0]);
@@ -691,17 +697,29 @@ const handleActionClick = (action) => {
   }
 
   if (action.type === "confirm") {
-    Modal.confirm({
-      title: "确认操作",
-      content:
-        action.confirmMessage ||
-        `确定要对 ${selectedRecords.length} 条数据执行此操作吗？`,
-      okText: "确定",
-      cancelText: "取消",
-      onOk: () => {
-        executeAction(action, selectedRecords);
-      },
-    });
+    if (needSelect) {
+      Modal.confirm({
+        title: "确认操作",
+        content:
+          action.confirmMessage ||
+          `确定要对 ${selectedRecords.length} 条数据执行此操作吗？`,
+        okText: "确定",
+        cancelText: "取消",
+        onOk: () => {
+          executeAction(action, selectedRecords);
+        },
+      });
+    } else {
+      Modal.confirm({
+        title: "确认操作",
+        content: action.confirmMessage || `确定要执行此操作吗？`,
+        okText: "确定",
+        cancelText: "取消",
+        onOk: () => {
+          executeAction(action, selectedRecords);
+        },
+      });
+    }
   } else {
     executeAction(action, selectedRecords);
   }
@@ -730,15 +748,11 @@ const executeAction = async (action, records) => {
       console.error("操作执行错误:", error);
       return;
     }
-    await fetchData();
-    // emit("action-click", {
-    //   actionKey: action.key,
-    //   records, // 传递数组
-    //   callback: action.callback,
-    //   apiUrl: action.apiUrl,
-    //   params: action.params,
-    // });
-    emit("update:selectedKeys", []);
+    let isFetchData = action.isFetchData !== void 0 ? action.isFetchData : true;
+    let isClearSelect = isNeedSelect(action) && action.isClearSelect !== void 0 ? action.isClearSelect : true;
+    if(isFetchData) await fetchData();
+    if(isClearSelect) emit("update:selectedKeys", []);
+
     if (action.message) {
       Message.success(action.message);
     }
@@ -890,6 +904,16 @@ const formModalChangeVisible = (val) => {
   state.formVisible = val;
 };
 
+// 检查字段是否禁用
+const isDisabled = (field) => {
+  if (!field) return false;
+  const disabled = field.disabled;
+  if (typeof disabled === "function") {
+    return disabled(field);
+  }
+  return disabled === true;
+};
+
 defineExpose({
   fetchData,
 });
@@ -937,7 +961,10 @@ defineExpose({
                 : 'secondary'
             "
             :status="action.status"
-            :disabled="props.selectedKeys.length === 0 || props.tableDisabled"
+            :disabled="
+              (props.selectedKeys.length === 0 || props.tableDisabled) &&
+              isNeedSelect(action)
+            "
             :size="config.tableSize || 'small'"
             @click="handleActionClick(action)"
             style="margin-right: 8px"
@@ -1444,8 +1471,8 @@ defineExpose({
         v-for="action in contextMenuActions"
         :key="action.key"
         class="context-menu-item"
-        :class="{ disabled: action.disabled }"
-        @click="!action.disabled && handleActionClick(action)"
+        :class="{ disabled: isDisabled(action) }"
+        @click="!isDisabled(action) && handleActionClick(action)"
       >
         {{ action.label }}
       </div>

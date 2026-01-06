@@ -42,7 +42,7 @@
 | `scroll` | `Object` | `{ x: 1200, y: 'auto' }` | 滚动区域配置，如 `{ x: '100%', y: 400 }` |
 | `contextMenuEnabled` | `Boolean` | `true` | 是否启用表格行右键菜单功能 |
 | `showSearchBar` | `Boolean` | `false` | 是否直接显示搜索条件,true代表直接显示搜索条件（移除掉搜索按钮和关闭按钮）,false代表点击搜索按钮才显示 |
-
+| `tableDisabled` | `Boolean` | `false` | 是否禁用表格操作（禁用所有操作按钮） |
 ### 2.2 表单与弹窗配置 (Form & Modal)
 
 | 参数 | 类型 | 默认值 | 说明 |
@@ -176,6 +176,9 @@ actions: [
     label: '编辑',
     type: 'primary',
     showInContextMenu: true, // 默认为 true，设为 false 则不在右键菜单显示
+    isFetchData: true, // 执行完之后是否刷新数据表格 默认是true
+    needSelect:true,// 是否需要选择数据默认为true,为false则不会校验是否选择了数据
+    isClearSelect: true, //  需要选择行的时候，执行完之后是否清除选择的行 默认是true
     // 编辑操作组件会自动处理，打开表单
   },
   {
@@ -183,7 +186,11 @@ actions: [
     label: '删除',
     status: 'danger',
     type: 'confirm',       // 确认框模式
-    confirmMessage: '确定删除?',
+    confirmMessage: '确定删除?',// type === 'confirm' 时生效
+    disabled:false, // 是否禁用 可以是函数返回布尔值也可以直接是布尔值
+    isFetchData: true, // 执行完之后是否刷新数据表格 默认是true
+    needSelect:true,// 是否需要选择数据默认为true,为false则不会校验是否选择了数据
+    isClearSelect: true, // 需要选择行的时候，执行完之后是否清除选择的行 默认是true
     // 点击后触发 executeAction 回调
   }
 ]
