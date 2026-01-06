@@ -1,468 +1,391 @@
-# Vue 3 + Arco Design 超级表格
+# Vue3 Arco SuperTable 组件文档
 
-## 📋 项目概述
+基于 Arco Design Vue 封装的高级表格组件，集成了配置化列、搜索、分页、CRUD 表单、本地配置持久化等功能，旨在通过 JSON 配置快速构建标准化的后台管理表格。
 
-这是一个完整的 **Vue 3 + Arco Design** 通用表单表格系统，提供了一套基于json配置实现的灵活、高效的表格和表单解决方案。系统包含三个核心组件和完整的文档体系。
+## 1. 组件功能概述
 
-## 🏗️ 核心组件架构
+`SuperTable` (Table.vue) 是一个功能强大的数据展示和管理组件。
 
-### 1. Table.vue - 通用表格组件
-主表格组件，提供表格数据展示、搜索、分页、操作等功能。
+### 核心功能
+*   **配置驱动**：通过 `config` 对象完全控制表格行为，无需写大量模板代码。
+*   **智能分页**：支持**前端分页**（一次性加载）和**后端分页**（API 驱动）两种模式一键切换。
+*   **自动搜索**：根据配置自动生成搜索栏，支持多种输入类型（文本、下拉、日期、范围等）。
+*   **CRUD 集成**：内置新增、编辑、查看、删除逻辑，自动生成表单弹窗。
+*   **列配置增强**：支持列显隐、排序、列宽调整，并支持**本地持久化存储**（LocalStorage）。
+*   **高度可定制**：提供丰富的插槽（单元格、表单项、搜索栏、工具栏）。
+*   **复杂表单支持**：支持表单验证、联动、多列布局、子表格（One-to-Many）等高级特性。
 
-**核心特性：**
-- 🎯 灵活的列配置，支持显示/隐藏、排序、调整宽度
-- 🔍 搜索功能，支持8种搜索控件类型
-- 📄 两种分页模式：前端分页和后端分页
-- ✏️ 集成表单功能，支持新增和编辑
-- 👁️ 只读模式，用于查看详情
-- 📊 行选择和批量操作
-- ⚙️ 列配置管理，可视化配置表格显示
+### 依赖与技术栈
+*   Vue 3.x (Composition API)
+*   Arco Design Vue 2.x
 
-**Props:**
-- `config` (必填) - 表格配置对象
-- `data` - 表格数据数组
-- `loading` - 加载状态
-- `selectedKeys` - 选中行数组
+---
 
-**主要事件：**
-- `@form-submit` - 表单提交事件
-- `@search` - 搜索事件
-- `@page-change` - 分页变化
-- `@action-click` - 操作按钮点击
-- `@api-request` - API请求事件
+## 2. tableConfig 配置详解
 
-### 2. TableForm.vue - 通用表单组件
-独立的表单组件，支持自动生成和验证表单。
+`tableConfig` 是组件的核心配置对象，以下是完整参数说明：
 
-**核心特性：**
-- 📝 支持12种表单控件类型
-- ✅ 完整的字段验证系统
-- 🎨 灵活的表单布局（垂直/水平）
-- 🔄 支持新增、编辑、只读三种模式
-- 🎯 条件字段渲染和禁用
-- 📦 动态选项和级联选择
-- 🔗 表格字段嵌入，支持行内编辑
+### 2.1 基础外观与交互 (UI/UX)
 
-**Props:**
-- `columns` (必填) - 列配置数组
-- `mode` - 表单模式 (create/edit/readonly)
-- `visible` - 弹窗显示状态
-- `record` - 编辑数据记录
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `cnDesc` | `String` | `'超级表格'` | 表格左上角的标题描述 |
+| `tableSize` | `String` | `'small'` | 表格密度: `'mini' \| 'small' \| 'medium' \| 'large'` |
+| `rowKey` | `String` | `'key'` | 行数据的唯一主键字段名（如 `id`） |
+| `bordered` | `Boolean \| Object` | `{ cell: true }` | 边框配置，`true` 为外框，`{ cell: true }` 为全边框 |
+| `stripe` | `Boolean` | `false` | 是否开启斑马纹 |
+| `hoverable` | `Boolean` | `true` | 是否开启鼠标悬停效果 |
+| `columnResizable` | `Boolean` | `true` | 是否允许拖拽调整列宽 |
+| `showHeader` | `Boolean` | `true` | 是否显示表头 |
+| `selection` | `Boolean` | `true` | 是否显示多选列（复选框） |
+| `showColumnConfig` | `Boolean` | `true` | 是否显示右上角的列设置按钮 |
+| `scroll` | `Object` | `{ x: 1200, y: 'auto' }` | 滚动区域配置，如 `{ x: '100%', y: 400 }` |
+| `contextMenuEnabled` | `Boolean` | `true` | 是否启用表格行右键菜单功能 |
+### 2.2 表单与弹窗配置 (Form & Modal)
 
-### 3. TableFormFieldItem.vue - 表单字段渲染器
-负责单个表单字段的渲染和绑定。
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `showForm` | `Boolean` | `true` | 是否启用内置的新增/编辑表单弹窗 |
+| `modalWidth` | `Number` | `1000` | 表单弹窗的宽度 (px) |
+| `formLayout` | `String` | `'horizontal'` | 表单布局: `'horizontal' \| 'vertical' \| 'inline'` |
+| `formColumns` | `Number` | `4` | 表单每行显示的列数 |
+| `formColGap` | `Number` | `10` | 表单列间距 (px) |
+| `formRowGap` | `Number` | `10` | 表单行间距 (px) |
 
-**支持的控件类型：**
-- `slot` - 自定义插槽
-- `input` - 文本输入框
-- `number` - 数字输入框
-- `textarea` - 多行文本
-- `select` - 下拉选择
-- `radio` - 单选框
-- `checkbox` - 复选框（返回数组）
-- `date` - 日期选择
-- `time` - 时间选择
-- `datetime` - 日期时间选择
-- `switch` - 开关控件
-- `slider` - 滑块
-- `table` - 表格（行内编辑）
+### 2.3 分页与数据 API (Pagination & API)
 
-### 4. TableExample.vue - 完整示例
-包含所有功能的演示和配置示例。
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `paginationType` | `String` | `'frontend'` | 分页模式: `'frontend'` (前端) \| `'backend'` (后端) |
+| `pageSize` | `Number` | `10` | 每页显示条数 |
+| `pageSizeOptions` | `Array` | `[5, 10, 20, 50]` | 分页条数下拉选项 |
+| `pageApiUrl` | `String` | `''` | 后端分页列表数据的 API 地址 |
+| `formAddApiUrl` | `String` | `''` | 新增数据的 API 地址 |
+| `formUpdateApiUrl` | `String` | `''` | 更新数据的 API 地址 |
+| `formDeleteApiUrl` | `String` | `''` | 删除数据的 API 地址 |
+| `tablePaginationAttrs`| `Object` | `{'hide-on-single-page': true}` | 透传给 Arco Pagination 组件的属性 |
 
-## 📚 文档体系
+### 2.4 样式定制 (Custom Style)
 
-| 文档 | 说明 | 适用场景 |
-|------|------|--------|
-| [QUICK_START.md](./md/QUICK_START.md) | 5分钟快速上手指南 | 新手入门 |
-| [TABLE_CONFIG.md](./md/TABLE_CONFIG.md) | 表格配置完整参考 | 表格配置 |
-| [FORM_CONFIG.md](./md/FORM_CONFIG.md) | 表单字段配置详解 | 表单开发 |
-| [FORM_INTEGRATION.md](./md/FORM_INTEGRATION.md) | 组件集成和扩展 | 深度集成 |
-| [TABLE_FIELD_TYPE.md](./md/TABLE_FIELD_TYPE.md) | 表格字段类型说明 | 嵌入式表格 |
-| [SEARCH_CONFIG.md](./md/SEARCH_CONFIG.md) | 搜索功能配置 | 搜索功能 |
-| [SEARCH_FIELD_TYPES.md](./md/SEARCH_FIELD_TYPES.md) | 搜索字段类型定义 | 类型参考 |
-| [SEARCH_ATTRS_EXAMPLES.md](./md/SEARCH_ATTRS_EXAMPLES.md) | 搜索属性示例 | 快速参考 |
-| [READONLY_MODE.md](./md/READONLY_MODE.md) | 只读模式使用指南 | 查看详情 |
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `hoverColor` | `String` | `'#eef5f8'` | 行悬停背景颜色 |
+| `hoverFontColor` | `String` | `''` | 行悬停字体颜色 |
+| `headerBgColor` | `String` | `'#eef5f8'` | 表头背景颜色 |
+| `headerFontColor` | `String` | `''` | 表头字体颜色 |
+| `tableAttrs` | `Object` | `{}` | 透传给 Arco Table 组件的其他属性 |
 
-## 🎯 快速开始
+### 2.5 本地存储配置 (Storage)
 
-### 基本使用
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `enableLocalStorage` | `Boolean` | `false` | 是否开启列配置（顺序、宽度、显隐）的本地存储 |
+| `uniqueId` | `String` | `''` | **必填**（开启存储时），表格的全局唯一标识 |
+| `userCode` | `String` | `''` | 可选，用户标识，用于区分不同用户的配置 |
 
-```vue
-<script setup>
-import SuperTable from './components/Table.vue'
-import { reactive, ref } from 'vue'
+### 2.6 列配置 (columns)
 
-const tableConfig = reactive({
-  columns: [
-    {
-      title: '姓名',
-      dataIndex: 'name',
-      form: { type: 'input', required: true }
+`columns` 数组中的每个对象代表一列，同时定义了该字段在**表格**和**表单**中的行为。
+
+```javascript
+columns: [
+  {
+    title: '姓名',           // 列标题
+    dataIndex: 'name',      // 数据字段名
+    width: 160,             // 列宽
+    visible: true,          // 默认是否显示
+    fixed: 'left',          // 固定列 'left' | 'right'
+    align: 'left',          // 对齐方式 'left' | 'right' | 'center'
+    ellipsis: true,         // 超出省略
+    sortable: {             // 排序配置
+      compare: (a, b) => a.localeCompare(b)
+    },
+    slotName: 'name-cell',  // 自定义单元格插槽名（可选）
+    // 如果要显示tag，比如状态字段 当slotName = status-cell 才生效 这是个预留插槽
+    statusMap: {
+      active: { label: "在职", color: "green" },
+      inactive: { label: "离职", color: "red" },
+    },
+    // 表单配置（用于新增/编辑弹窗） 没有这个字段就代表弹窗里面不会出现这个字段
+    form: {
+      type: 'input',        // 控件类型：input, select, number, date, radio, switch, textarea, slot, table
+      slotName: 'name-form',// 自定义表单插槽名（可选）当type=slot的时候必填
+      creatable: true,      // 新增时是否显示
+      editable: true,       // 编辑时是否显示
+      required: true,       // 是否必填
+      placeholder: '请输入',
+      enterNext: 'age',     // 回车后跳转到的下一个字段名（提升录入体验）
+      attrs: {              // 透传给 Arco 组件的属性或者事件
+        'max-length': 50
+      },
+      // type='select' 或 'radio' 或 'checkbox' 时需要 可以是函数返回数组
+      options: [
+        { label: '选项A', value: 'A' }
+      ],
     }
-  ],
-  showForm: true,
-  paginationType: 'frontend',
-  pageSize: 10
-})
+  }
+]
+```
 
-const tableData = ref([])
+### 2.5 搜索配置 (searchFields)
 
-const handleFormSubmit = (data) => {
-  console.log('表单提交:', data)
-}
-</script>
+定义表格顶部的搜索栏。
 
-<template>
-  <SuperTable 
-    :config="tableConfig" 
-    :data="tableData"
-    @form-submit="handleFormSubmit"
+```javascript
+searchFields: [
+  {
+    title: '姓名',
+    dataIndex: 'name',
+    type: 'input',          // 类型：input, select, date, date-range, number, slot
+    slotName: 'name-search',// 自定义搜索插槽名（可选）当type=slot的时候必填
+    placeholder: '搜索姓名',
+     // 透传给 Arco 组件的属性或者事件
+    attrs: {             
+      'max-length': 50
+    },
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    type: 'select',
+    // 可以是函数返回数组
+    options: () => [
+      { label: '启用', value: 1 },
+      { label: '禁用', value: 0 }
+    ],
+     // 透传给 Arco 组件的属性或者事件
+    attrs: {},
+  }
+]
+```
+
+### 2.6 操作按钮 (actions)
+
+定义表格左上角的操作按钮。
+
+```javascript
+actions: [
+  {
+    key: 'edit',
+    label: '编辑',
+    type: 'primary',
+    showInContextMenu: true, // 默认为 true，设为 false 则不在右键菜单显示
+    // 编辑操作组件会自动处理，打开表单
+  },
+  {
+    key: 'delete',
+    label: '删除',
+    status: 'danger',
+    type: 'confirm',       // 确认框模式
+    confirmMessage: '确定删除?',
+    // 点击后触发 executeAction 回调
+  }
+]
+```
+
+---
+
+## 3. 插槽使用指南
+
+### 3.1 单元格插槽 (Table Cell)
+在 `columns` 中指定 `slotName`，自定义单元格渲染。
+
+```html
+<!-- 配置 -->
+columns: [{ title: '状态', dataIndex: 'status', slotName: 'status-cell' }]
+
+<!-- 模板 -->
+<template #status-cell="{ record }">
+  <a-tag :color="record.status === 1 ? 'green' : 'red'">
+    {{ record.status === 1 ? '启用' : '禁用' }}
+  </a-tag>
+</template>
+```
+
+### 3.2 表单项插槽 (Form Item)
+在 `columns[].form` 中指定 `type: 'slot'` 和 `slotName`，自定义表单输入控件。
+
+```html
+<!-- 配置 -->
+form: { type: 'slot', slotName: 'phone-input', required: true }
+
+<!-- 模板 -->
+<template
+  #phone-input="{ domRef,field,formData,disabled,attrs,handleEnter }"
+>
+  <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
+  <a-space :size="8">
+    <a-input
+      :ref="(ref) => domRef(ref)"
+      v-model="formData[field.dataIndex]"
+      v-bind="attrs"
+      :disabled="disabled"
+      :placeholder="field.form.placeholder"
+      @keydown.enter="handleEnter"
+    />
+    <a-button>+</a-button>
+  </a-space>
+</template>
+```
+
+### 3.3 搜索栏插槽 (Search Item)
+在 `searchFields` 中指定 `type: 'slot'` 和 `slotName`。
+
+```html
+<!-- 配置 -->
+searchFields: [{ dataIndex: 'custom', type: 'slot', slotName: 'custom-search' }]
+
+<!-- 模板 -->
+<template #custom-search="{ field, state, config, handleSearch }">
+  <a-input-search
+    v-model="state.searchValues[field.dataIndex]"
+    :placeholder="field.placeholder || `搜索${field.title}`"
+    allow-clear
+    :size="config.tableSize || 'small'"
+    @search="handleSearch"
+    v-bind="field.attrs || {}"
+    v-on="field.attrs || {}"
   />
 </template>
 ```
 
-## 🎨 表单控件完整对照表
+### 3.4 工具栏插槽 (Toolbar)
+在搜索栏右侧添加自定义按钮。
 
-| 控件类型 | 说明 | 值类型 | 示例 |
-|---------|------|--------|------|
-| `slot` | 自定义插槽 | any | any |
-| `input` | 文本输入框 | 字符串 | 姓名、描述等 |
-| `number` | 数字输入框 | 数字 | 价格、数量等 |
-| `textarea` | 多行文本 | 字符串 | 备注、评论等 |
-| `select` | 下拉选择 | 字符串/数字 | 部门、状态等 |
-| `radio` | 单选框 | 字符串/数字/布尔 | 性别、是否等 |
-| `checkbox` | 复选框 | 数组 | 权限、标签等 |
-| `date` | 日期选择 | 字符串 | 出生日期、时间等 |
-| `time` | 时间选择 | 字符串 | 上班时间等 |
-| `datetime` | 日期时间 | 字符串 | 创建时间等 |
-| `switch` | 开关控件 | 布尔值 | 启用/禁用等 |
-| `slider` | 滑块 | 数字 | 评分、百分比等 |
-| `table` | 嵌入表格 | 数组 | 订单明细等 |
-
-## 🌟 主要特性
-| `date` | 日期选择器 | 字符串 |
-| `time` | 时间选择器 | 字符串 |
-| `datetime` | 日期时间选择器 | 字符串 |
-| `switch` | 开关 | 布尔值 |
-| `slider` | 滑块 | 数字 |
-| `table` | 表格（占满一行） | 数组 |
-
-## ✨ 核心特性### 1. 灵活的Form配置
-
-```javascript
-form: {
-  type: 'input',              // 控件类型
-  creatable: true,            // 新增时可用
-  slotName: true,             // type=slot时生效
-  columns: true,              // 占多数列
-  editable: true,             // 编辑时可用
-  required: true,             // 必填
-  enterNext: "xxx",           // 回车指向下一个控件（带输入框的控件才可以）
-  oneRow:   true,             // 占满一行
-  disabled: false,            // 禁用状态（支持函数）
-  options: [],                // 选项数据（支持函数）
-  defaultValue: null,         // 默认值
-  placeholder: '提示',        // 占位符
-  attrs: {},                  // 原生属性透传
-  validator: (value) => '',   // 自定义验证
-}
+```html
+<template #toolbar="{ size }">
+  <a-button :size="size">导出 Excel</a-button>
+</template>
 ```
 
-### 2. 条件控制
+---
 
-**按模式显示/隐藏**
-```javascript
-// 仅在新增时显示
-creatable: true, editable: false
+## 4. 高级功能说明
 
-// 仅在编辑时显示
-creatable: false, editable: true
-```
+### 4.1 数据交互回调
 
-**条件禁用**
-```javascript
-disabled: (formData, field) => {
-  return !!formData.isLocked;
-}
-```
+组件通过 props 传递的方法处理业务逻辑：
 
-### 3. 动态选项
+*   **`pageFetchData(url, params)`**: 后端分页模式下，组件请求数据的回调。
+    *   `params`: `{ pageNo, pageSize, searchValues }`
+    *   **必须返回**: `Promise`，Resolve 结果需包含 `{ records: [], total: 100 }` 结构。
 
-```javascript
-options: (formData, field) => {
-  // 根据其他字段值动态返回选项
-  return formData.department === 'tech'
-    ? [{ label: 'Vue', value: 'vue' }]
-    : [];
-}
-```
+*   **`handleFormSubmit({ config, mode, data, record })`**: 表单提交回调。
+    *   `mode`: `'create'` (新增) | `'edit'` (编辑)
+    *   `data`: 表单数据对象
+    *   在此处调用后端保存接口，成功后组件会自动刷新列表。
 
-### 4. 自定义验证
+*   **`executeAction(action, records, params)`**: 自定义操作按钮点击回调。
+    *   `action`: 按钮配置对象
+    *   `records`: 选中的行数据数组
+    *   常用于批量删除、审核等操作。
 
-```javascript
-validator: (value, field) => {
-  if (!value) return '不能为空';
-  if (value.length < 3) return '至少3个字符';
-  return ''; // 验证通过
-}
-```
+### 4.2 本地持久化 (LocalStorage)
 
-### 5. 原生属性透传
+开启 `enableLocalStorage: true` 并设置 `uniqueId` 后，组件会自动保存用户的以下偏好：
+*   列的显示/隐藏状态
+*   列的顺序 (拖拽排序)
+*   列的宽度 (拖拽调整)
 
-```javascript
-attrs: {
-  'max-length': 50,
-  'allow-clear': true,
-  'show-word-limit': true,
-}
-```
+组件加载时会自动合并：`最新本地配置` > `初始本地配置` > `代码默认配置`。
+列配置弹窗中提供了“重置”按钮，可一键恢复到初始状态。
 
-## 📊 数据流
+---
 
-### 新增流程
-```
-点击"+新增"按钮
-    ↓
-打开Form弹窗（mode='create'）
-    ↓
-显示空白表单（根据form.creatable === true的字段）
-    ↓
-用户填写表单
-    ↓
-点击"确定"提交
-    ↓
-触发 form-submit 事件
-    ↓
-{ mode: 'create', data: {...formData...} }
-```
+## 5. 使用示例
 
-### 编辑流程
-```
-点击行的"编辑"按钮
-    ↓
-打开Form弹窗（mode='edit'）
-    ↓
-显示该行数据（根据form.editable === true的字段）
-    ↓
-用户修改表单
-    ↓
-点击"确定"提交
-    ↓
-触发 form-submit 事件
-    ↓
-{ mode: 'edit', data: {...formData...}, record: {...originalData...} }
-```
+``` vue
+<script setup>
+import { reactive, ref } from 'vue';
+import {SuperTable} from 'arco-vue3-supertable';
 
-## 🔧 快速集成步骤
+const tableData = ref([]);
+const loading = ref(false);
 
-### 1. 启用表单功能
-```javascript
-const tableConfig = {
-  columns: [...],
-  showForm: true,  // 启用表单
-};
-```
-
-### 2. 为columns添加form配置
-```javascript
-{
-  title: '姓名',
-  dataIndex: 'name',
-  form: {
-    type: 'input',
-    required: true,
-  },
-}
-```
-
-### 3. 监听表单提交
-```javascript
-@form-submit="handleFormSubmit"
-
-const handleFormSubmit = (data) => {
-  // 处理表单提交
-};
-```
-
-## 📁 项目文件结构
-
-```
-src/components/
-├── Table.vue                      表格主组件
-├── TableForm.vue                  表单主组件
-├── TableFormFieldItem.vue         表单字段渲染器
-├── TableExample.vue               完整使用示例
-├── README.md                      项目总览（本文件）
-├── QUICK_START.md                 5分钟快速入门
-├── TABLE_CONFIG.md                表格配置完整指南
-├── FORM_CONFIG.md                 表单配置完整指南
-├── FORM_INTEGRATION.md            组件集成说明
-├── TABLE_FIELD_TYPE.md            表单内表格字段说明
-├── SEARCH_CONFIG.md               搜索功能配置指南
-├── SEARCH_FIELD_TYPES.md          搜索字段类型定义
-├── SEARCH_ATTRS_EXAMPLES.md       搜索属性快速参考
-├── READONLY_MODE.md               只读模式使用说明
-└── READONLY_MODE_IMPLEMENTATION.md 只读模式实现细节
-```
-
-## ✨ 已实现的核心功能
-
-### 表单功能
-- ✅ 12种表单控件类型（input、number、textarea、select、radio、checkbox、date、time、datetime、switch、slider、table）
-- ✅ 新增/编辑/只读三种模式
-- ✅ 自动表单生成和验证
-- ✅ 条件字段渲染（creatable/editable）
-- ✅ 条件禁用（支持函数）
-- ✅ 动态选项（支持函数）
-- ✅ 自定义验证函数
-- ✅ 原生属性透传
-- ✅ 多种值类型支持
-
-### 表格功能
-- ✅ 新增按钮集成
-- ✅ 行编辑按钮
-- ✅ 查看详情（单条和多条）
-- ✅ 搜索过滤功能
-- ✅ 前端/后端两种分页
-- ✅ 列显示/隐藏管理
-- ✅ 列宽度调整
-- ✅ 行选择和批量操作
-
-### 表格字段
-- ✅ 嵌入式表格支持
-- ✅ 行内编辑功能
-
-## 📖 文档导航
-
-| 场景 | 推荐文档 | 阅读时间 |
-|------|--------|--------|
-| 首次使用 | [QUICK_START.md](./md/QUICK_START.md) | 5 分钟 |
-| 表格配置 | [TABLE_CONFIG.md](./md/TABLE_CONFIG.md) | 20 分钟 |
-| 表单配置 | [FORM_CONFIG.md](./md/FORM_CONFIG.md) | 30 分钟 |
-| 搜索功能 | [SEARCH_CONFIG.md](./md/SEARCH_CONFIG.md) | 20 分钟 |
-| 搜索参考 | [SEARCH_ATTRS_EXAMPLES.md](./md/SEARCH_ATTRS_EXAMPLES.md) | 10 分钟 |
-| 搜索类型 | [SEARCH_FIELD_TYPES.md](./md/SEARCH_FIELD_TYPES.md) | 15 分钟 |
-| 查看详情 | [READONLY_MODE.md](./md/READONLY_MODE.md) | 10 分钟 |
-| 表单表格 | [TABLE_FIELD_TYPE.md](./md/TABLE_FIELD_TYPE.md) | 20 分钟 |
-| 深度集成 | [FORM_INTEGRATION.md](./md/FORM_INTEGRATION.md) | 30 分钟 |
-| 代码示例 | [TableExample.vue](./md/TableExample.vue) | 实时参考 |
-
-## 🎓 学习路径
-
-**新手入门路径：**
-1. 查看本 README.md（了解整体）
-2. 阅读 [QUICK_START.md](./md/QUICK_START.md)（5分钟上手）
-3. 参考 [TableExample.vue](./md/TableExample.vue)（看完整示例）
-4. 尝试修改示例代码（动手实践）
-
-**功能扩展路径：**
-1. [TABLE_CONFIG.md](./md/TABLE_CONFIG.md) - 表格配置
-2. [FORM_CONFIG.md](./md/FORM_CONFIG.md) - 表单配置
-3. [SEARCH_CONFIG.md](./md/SEARCH_CONFIG.md) - 搜索配置
-
-**深度开发路径：**
-1. [FORM_INTEGRATION.md](./md/FORM_INTEGRATION.md) - 组件集成
-2. [TABLE_FIELD_TYPE.md](./md/TABLE_FIELD_TYPE.md) - 高级表单字段
-3. 查看源代码注释 - 深入理解实现
-
-## 💡 最佳实践
-
-### Form配置建议
-```javascript
-// ✅ 好的实践
-{
-  title: '用户名',
-  dataIndex: 'username',
-  form: {
-    type: 'input',           // 明确指定type
-    required: true,          // 使用required
-    creatable: true,         // 明确指定模式
-    editable: true,
-    validator: (value) => {  // 复杂验证用函数
-      return /^[a-z0-9_]{3,}$/.test(value) ? '' : '无效用户名';
+const config = reactive({
+  uniqueId: 'user-table-v1',
+  enableLocalStorage: true,
+  paginationType: 'frontend',
+  rowKey: 'id',
+  columns: [
+    { title: 'ID', dataIndex: 'id', width: 80 },
+    { 
+      title: '姓名', 
+      dataIndex: 'name', 
+      width: 150,
+      form: { type: 'input', required: true, creatable: true, editable: true } 
     },
-    attrs: {
-      'max-length': 20,      // 通过attrs传递原生属性
-      'allow-clear': true,
-    },
+    {
+      title: '角色',
+      dataIndex: 'role',
+      form: { 
+        type: 'select', 
+        options: [{label: '管理员', value: 'admin'}, {label: '用户', value: 'user'}] 
+      }
+    }
+  ],
+  searchFields: [
+    { title: '姓名', dataIndex: 'name', type: 'input' }
+  ],
+  actions: [
+    { key: 'edit', label: '编辑' }, // 自动关联 form
+    { key: 'delete', label: '删除', type: 'confirm', status: 'danger' }
+  ],
+  // 表单提交处理
+  handleFormSubmit: async ({ mode, data }) => {
+    console.log(mode, data);
+    // 模拟 API 调用
+    if (mode === 'create') tableData.value.push({ id: Date.now(), ...data });
+    else { /* 更新逻辑 */ }
   },
-}
-
-// ❌ 避免
-{
-  form: {
-    // 缺少type定义
-    // creatable和editable都不写（依赖默认值）
-    placeholder: '这应该在attrs中',  // 应该在attrs中
-  },
-}
-```
-
-### 事件处理建议
-```javascript
-// 新增
-const handleFormSubmit = (data) => {
-  const { mode, data: formData, record } = data;
-  
-  if (mode === 'create') {
-    // 调用新增API
-    createData(formData);
-  } else if (mode === 'edit') {
-    // 调用更新API
-    updateData(record.id, formData);
-  }
-}
-```
-
-## 🤝 贡献指南
-
-如果发现问题或有改进建议，欢迎通过以下方式反馈：
-1. 检查 [TableExample.vue](./src/components/TableExample.vue) 中的相似功能
-2. 查阅相关文档中的示例
-3. 查看源代码注释
-4. 提出 Issue 或 Pull Request
-
-## 📄 许可证
-
-MIT License
-## ✅ 质量检查
-
-- ✅ 代码无错误
-- ✅ 组件功能完整
-- ✅ 文档详细完整
-- ✅ 示例代码可运行
-- ✅ 界面交互流畅
-- ✅ 事件系统完善
-
-## 📞 技术支持
-
-有任何问题，请：
-1. 查看对应的文档文件
-2. 参考TableExample.vue的使用方式
-3. 检查Form配置是否正确
-4. 查看浏览器控制台的错误信息
-
-## 🌟 最新功能
-
-### 表单项模式（isFormItem）
-当Table组件用作表单字段时（`isFormItem="true"`），点击新增按钮会直接向父级数组添加一条新记录，而无需打开表单弹窗。
-
-**使用示例：**
-
-```javascript
-// 在TableForm中使用Table作为字段
-{
-  title: '子表',
-  dataIndex: 'items',
-  form: {
-    type: 'table',
-    tableConfig: {
-      columns: [...],  // 子表列定义
-      // isFormItem: true 会自动设置
+  // 自定义按钮处理
+  executeAction: async (action, records) => {
+    if (action.key === 'delete') {
+      // 模拟删除
+      tableData.value = tableData.value.filter(item => item.id !== records[0].id);
     }
   }
-}
+});
+</script>
+`
+<template>
+  <div class="app-container">
+    <SuperTable 
+      :config="config" 
+      v-model:data="tableData" 
+      v-model:loading="loading"
+    >
+      <template #table-top>
+        <a-alert>这是一个表格上方插槽示例</a-alert>
+      </template>
+      <template #table-bottom>
+        <div style="padding: 10px; background: #f0f0f0;">
+          这是一个表格下方插槽示例
+        </div>
+      </template>
+    </SuperTable>
+  </div>
+</template>
 ```
 
-祝你使用愉快！🚀
+## 6. vue启动配置
+
+``` javascript
+import { createApp } from 'vue'
+import './style.css'
+import App from './App.vue'
+import ArcoVue from '@arco-design/web-vue';
+// import Supertable from 'arco-vue3-supertable';
+import ArcoVueIcon from '@arco-design/web-vue/es/icon';
+import '@arco-design/web-vue/dist/arco.css';
+// 引入css
+import "arco-vue3-supertable/dist/arco-vue3-supertable.css";
+const app = createApp(App);
+// 安装之后不用每个组件就引入了
+// Supertable.install(app)
+app.use(ArcoVue);
+// 不要忘记icon 否则不会显示按钮图标
+app.use(ArcoVueIcon);
+app.mount('#app');
+
+```

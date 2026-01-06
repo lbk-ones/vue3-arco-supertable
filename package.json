@@ -1,7 +1,7 @@
 {
   "name": "arco-vue3-supertable",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一个基于arco的vue3超级表格，基于配置来动态生成表格和表单",
   "keywords": [
     "vue",
@@ -28,8 +28,7 @@
     }
   },
   "files": [
-    "dist",
-    "src/components"
+    "dist"
   ],
   "peerDependencies": {
     "vue": "^3.5.0"

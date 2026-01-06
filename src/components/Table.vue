@@ -1,7 +1,8 @@
 <script setup>
-import { reactive, computed, onMounted, watch } from "vue";
+import { reactive, computed,onUnmounted, onMounted, watch, ref } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
+import TableInfo from "./TableInfo.vue";
 
 // Props 定义
 const props = defineProps({
@@ -28,6 +29,9 @@ const props = defineProps({
     //   columnResizable: true,          // 列是否可拖拽调整宽度
     //   stripe: false,                  // 是否显示斑马纹
     //   pageSizeOptions: [10,20,50,100],// 分页选项
+    //   uniqueId: 'uid',                // 表格唯一标识 (必填，开启本地存储时需要)
+    //   userCode: 'user1',              // 用户自定义代码 (可选，用于区分不同用户配置)
+    //   enableLocalStorage: true,       // 是否启用本地存储
     // }
     default: () => {
       return {
@@ -123,6 +127,18 @@ const props = defineProps({
         tablePaginationAttrs: {
           "hide-on-single-page": true,
         },
+        
+         // 表格唯一标识 (必填，开启本地存储时需要)
+        uniqueId: "",
+
+        // 用户自定义代码 (可选，用于区分不同用户配置)
+        userCode: "",
+
+        // 是否启用本地存储
+        enableLocalStorage: false, 
+
+        // 是否启用右键菜单
+        contextMenuEnabled: true,
       };
     },
   },
@@ -188,28 +204,216 @@ const state = reactive({
   viewListRecords: [], // 要查看/编辑的多条记录
   viewListMode: "view", // 列表模式：view 或 edit
   currentViewRecord: null, // 当前查看的单条记录
+  contextMenuVisible: false, // 右键菜单显示状态
+  contextMenuPosition: { x: 0, y: 0 }, // 右键菜单位置
+  contextMenuRecord: null, // 右键点击的行数据
 });
 
-// 初始化列配置
-const initializeColumns = () => {
-  if (!props.config.columns) return;
+const visibleTableInfo = ref(false); // 表格信息弹窗
 
-  state.columnConfig = JSON.parse(JSON.stringify(props.config.columns));
+// 环境检查
+const isBrowser = typeof window !== "undefined";
 
-  // 初始化列可见性和顺序，并为每列添加 slotName
+// --- LocalStorage Logic ---
+
+// 获取存储Key
+const getStorageKey = () => {
+  const { uniqueId, userCode, enableLocalStorage } = props.config;
+  if (!enableLocalStorage || !uniqueId) return null;
+  return userCode ? `${uniqueId}_${userCode}` : `${uniqueId}`;
+};
+
+// 安全解析JSON
+const safeParse = (str) => {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.error("Table Config Parse Error:", e);
+    return null;
+  }
+};
+
+// 合并配置（保留本地存储的顺序和宽度，合并代码中的新列）
+const mergeConfig = (defaultCols, storedCols) => {
+  const merged = [];
+  const defaultMap = new Map(defaultCols.map((col) => [col.dataIndex, col]));
+
+  // 1. 优先使用存储中的列配置（保持顺序）
+  storedCols.forEach((sc) => {
+    if (defaultMap.has(sc.dataIndex)) {
+      const col = defaultMap.get(sc.dataIndex);
+      // 应用存储的宽度
+      if (sc.width) col.width = sc.width;
+      if (sc.fixed) col.fixed = sc.fixed;
+      if (sc.ellipsis !== undefined) col.ellipsis = sc.ellipsis;
+      // 暂存存储的可见性状态
+      if (sc.visible !== undefined) col._storedVisible = sc.visible;
+      merged.push(col);
+      defaultMap.delete(sc.dataIndex);
+    }
+  });
+
+  // 2. 追加代码中新增的列
+  defaultCols.forEach((col) => {
+    if (defaultMap.has(col.dataIndex)) {
+      merged.push(col);
+    }
+  });
+
+  return merged;
+};
+
+// 保存配置到本地存储
+const saveConfigToStorage = (field, columns) => {
+  if (!props.config.enableLocalStorage || !isBrowser) return;
+  const key = getStorageKey();
+  if (!key) return;
+
+  try {
+    const simpleConfig = columns.map((col) => ({
+      dataIndex: col.dataIndex,
+      width: col.width,
+      fixed: col.fixed,
+      ellipsis: col.ellipsis,
+      // 如果是保存 initialValue，直接用 visible 属性
+      // 如果是保存 latestValue，检查 columnVisibility 状态
+      visible:
+        field === "initialValue"
+          ? col.visible !== false
+          : state.columnVisibility[col.dataIndex] !== false,
+    }));
+
+    const storedStr = localStorage.getItem(key);
+    const existing = safeParse(storedStr) || {};
+    existing[field] = simpleConfig;
+
+    // 如果是首次保存 initialValue，且没有 latestValue，则同步初始化 latestValue
+    if (field === "initialValue" && !existing.latestValue) {
+      existing.latestValue = simpleConfig;
+    }
+
+    localStorage.setItem(key, JSON.stringify(existing));
+  } catch (e) {
+    console.error("Save config failed", e);
+  }
+};
+
+// 重置列配置
+const handleResetColumnConfig = () => {
+  let targetConfig = null;
+  const key = getStorageKey();
+
+  // 尝试从 storage 获取 initialValue
+  if (props.config.enableLocalStorage && isBrowser && key) {
+    try {
+      const stored = safeParse(localStorage.getItem(key));
+      if (stored && stored.initialValue) {
+        targetConfig = mergeConfig(
+          JSON.parse(JSON.stringify(props.config.columns)),
+          stored.initialValue
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // 如果没有获取到（或未启用 storage），直接使用 props 配置
+  if (!targetConfig) {
+    targetConfig = JSON.parse(JSON.stringify(props.config.columns));
+  }
+
+  // 更新状态
+  updateStateColumns(targetConfig);
+
+  // 同步更新 latestValue
+  if (props.config.enableLocalStorage) {
+    saveConfigToStorage("latestValue", state.columnConfig);
+  }
+
+  Message.success("已重置为初始配置");
+};
+
+// 统一更新列状态的辅助函数
+const updateStateColumns = (columns) => {
+  state.columnConfig = columns;
+  state.columnOrder = [];
+  //state.columnVisibility = {}; // 不直接重置对象，而是更新属性，保持响应性
+  // 清理旧的可见性状态? 还是直接覆盖? 直接覆盖即可。
+  const newVisibility = {};
+
   state.columnConfig.forEach((col, index) => {
-    state.columnVisibility[col.dataIndex] = col.visible !== false;
+    // 确定可见性
+    let isVisible = true;
+    if (col._storedVisible !== undefined) {
+      isVisible = col._storedVisible;
+      delete col._storedVisible;
+    } else {
+      isVisible = col.visible !== false;
+    }
+
+    newVisibility[col.dataIndex] = isVisible;
     state.columnOrder.push({
       index,
       dataIndex: col.dataIndex,
       title: col.title,
     });
-    // 为每列添加 slotName，用于动态插槽
+
     if (!col.slotName) {
       col.slotName = `${col.dataIndex}-cell`;
     }
+    // 初始化 fixed 属性，如果没有则默认为 false (即不固定)
+    if (!col.fixed) {
+      col.fixed = false;
+    }
   });
+
+  // 更新 visibility 对象
+  state.columnVisibility = newVisibility;
 };
+
+// 初始化列配置
+const initializeColumns = () => {
+  if (!props.config.columns) return;
+
+  let finalColumns = JSON.parse(JSON.stringify(props.config.columns));
+
+  // 尝试加载本地存储
+  if (props.config.enableLocalStorage && isBrowser) {
+    const key = getStorageKey();
+    if (key) {
+      try {
+        const storedData = safeParse(localStorage.getItem(key));
+        if (storedData) {
+          // 优先加载 latestValue，其次 initialValue
+          const configToLoad =
+            storedData.latestValue || storedData.initialValue;
+          if (configToLoad && Array.isArray(configToLoad)) {
+            finalColumns = mergeConfig(finalColumns, configToLoad);
+          }
+        } else {
+          // 首次加载，保存 initialValue
+          saveConfigToStorage("initialValue", finalColumns);
+        }
+      } catch (e) {
+        console.error("Load config failed", e);
+      }
+    }
+  }
+
+  updateStateColumns(finalColumns);
+};
+
+// 监听配置变化自动保存
+watch(
+  [() => state.columnConfig, () => state.columnVisibility],
+  () => {
+    if (props.config.enableLocalStorage && state.columnConfig.length > 0) {
+      saveConfigToStorage("latestValue", state.columnConfig);
+    }
+  },
+  { deep: true }
+);
 
 // 获取显示的列（不包括操作列）
 const visibleColumns = computed(() => {
@@ -241,7 +445,9 @@ const getFilteredData = () => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
+        const searchField = props.config.searchFields.find(
+          (f) => f.dataIndex === field
+        );
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -249,7 +455,9 @@ const getFilteredData = () => {
         switch (fieldType) {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
-              const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+              const itemValue = Array.isArray(fieldValue)
+                ? fieldValue
+                : [fieldValue];
               return value.some((v) => itemValue.includes(v));
             }
             return true;
@@ -258,7 +466,9 @@ const getFilteredData = () => {
             if (Array.isArray(value) && value.length === 2) {
               const [startDate, endDate] = value;
               const itemDate = new Date(fieldValue);
-              return itemDate >= new Date(startDate) && itemDate <= new Date(endDate);
+              return (
+                itemDate >= new Date(startDate) && itemDate <= new Date(endDate)
+              );
             }
             return true;
 
@@ -323,7 +533,8 @@ const handleResetSearch = () => {
 
 // 获取后端数据
 const fetchData = async () => {
-  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl) return;
+  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
+    return;
   try {
     let data = await props.config?.pageFetchData?.(props.config.pageApiUrl, {
       pageNo: state.currentPage,
@@ -384,6 +595,53 @@ const handleRowClick = (record) => {
   }
   emit("update:selectedKeys", selectKeys);
 };
+
+// 右键菜单处理
+const handleRowContextMenu = (record, event) => {
+  if (props.config.contextMenuEnabled === false) return;
+  
+  event.preventDefault();
+  
+  // 选中当前行
+  const key = record[getKeyName()];
+  emit("update:selectedKeys", [key]);
+  
+  // 设置菜单位置和显示
+  state.contextMenuPosition = {
+    x: event.clientX,
+    y: event.clientY
+  };
+  state.contextMenuRecord = record;
+  state.contextMenuVisible = true;
+};
+
+// 关闭右键菜单
+const closeContextMenu = () => {
+  state.contextMenuVisible = false;
+};
+
+// 监听全局点击关闭菜单
+const handleGlobalClick = () => closeContextMenu();
+const handleGlobalContextMenu = (e) => {
+  if (!e.target.closest('.arco-table-tr')) {
+    closeContextMenu();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('click', handleGlobalClick);
+  window.addEventListener('contextmenu', handleGlobalContextMenu);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleGlobalClick);
+  window.removeEventListener('contextmenu', handleGlobalContextMenu);
+});
+
+// 获取右键菜单可用的操作
+const contextMenuActions = computed(() => {
+  return (props.config.actions || []).filter(action => action.showInContextMenu !== false);
+});
 
 // 操作按钮点击（传递选中的行数组）
 const handleActionClick = (action) => {
@@ -628,9 +886,11 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span style="font-weight: 700; font-size: 1rem" v-if="!!config.cnDesc">{{
-          config.cnDesc || ""
-        }}</span>
+        <span
+          style="font-weight: 700; font-size: 1rem"
+          v-if="!!config.cnDesc"
+          >{{ config.cnDesc || "" }}</span
+        >
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
@@ -697,6 +957,14 @@ defineExpose({
           :size="config.tableSize || 'small'"
         >
           <IconSettings />
+        </a-button>
+
+        <a-button
+          type="outline"
+          @click="visibleTableInfo = true"
+          :size="config.tableSize || 'small'"
+        >
+          <icon-info-circle />
         </a-button>
 
         <slot name="toolbar" :size="config.tableSize || 'small'" />
@@ -816,7 +1084,10 @@ defineExpose({
               <a-range-picker
                 v-model="state.searchValues[field.dataIndex]"
                 :placeholder="
-                  field.placeholder || [`${field.title}开始`, `${field.title}结束`]
+                  field.placeholder || [
+                    `${field.title}开始`,
+                    `${field.title}结束`,
+                  ]
                 "
                 :size="config.tableSize || 'small'"
                 @change="handleSearch"
@@ -864,6 +1135,9 @@ defineExpose({
       </div>
     </div>
 
+    <!-- 表格上方插槽 -->
+    <slot name="table-top" />
+
     <!-- 表格 -->
     <a-table
       :columns="visibleColumns"
@@ -881,6 +1155,7 @@ defineExpose({
       @update:selected-keys="(keys) => emit('update:selectedKeys', keys)"
       @selection-change="handleSelectionChange"
       @row-click="handleRowClick"
+      @row-contextmenu="handleRowContextMenu"
       :scroll="config.scroll || { x: 1200 }"
       :pagination="false"
       :loading="loading"
@@ -900,15 +1175,13 @@ defineExpose({
       <template #status-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
-              record[column.dataIndex]
-            ]?.color || 'blue'
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+              ?.statusMap?.[record[column.dataIndex]]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
-              record[column.dataIndex]
-            ]?.label || record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+              ?.statusMap?.[record[column.dataIndex]]?.label || record.status
           }}
         </a-tag>
       </template>
@@ -927,9 +1200,15 @@ defineExpose({
       </template>
     </a-table>
 
+    <!-- 表格下方插槽 -->
+    <slot name="table-bottom" />
+
     <!-- 分页 -->
     <div v-if="config.paginationType !== 'none'" class="table-pagination">
-      <span>共 {{ totalCount }} 条数据，已选择 {{ props.selectedKeys.length }} 条</span>
+      <span
+        >共 {{ totalCount }} 条数据，已选择
+        {{ props.selectedKeys.length }} 条</span
+      >
       <a-pagination
         :current="state.currentPage"
         :page-size="state.pageSize"
@@ -950,16 +1229,19 @@ defineExpose({
       v-model:visible="state.visibleColumnModal"
       title="表格列配置"
       @ok="saveColumnConfig"
-      width="700px"
+      width="800px"
     >
       <!-- 搜索框 -->
-      <div style="margin-bottom: 16px; display: flex; gap: 8px">
+      <div style="margin-bottom: 16px; display: flex;justify-content: space-between; gap: 8px">
         <a-input-search
           v-model="state.columnSearchValue"
           placeholder="搜索列名..."
           allow-clear
           style="flex: 1; max-width: 300px"
         />
+        <a-button type="secondary" @click="handleResetColumnConfig"
+          >配置还原</a-button
+        >
       </div>
 
       <div class="column-config-grid">
@@ -968,6 +1250,8 @@ defineExpose({
           <div class="col-name">列名</div>
           <div class="col-visibility">显示</div>
           <div class="col-width">宽度 (px)</div>
+          <div class="col-fixed">固定</div>
+          <div class="col-ellipsis">超长省略</div>
           <div class="col-actions">操作</div>
         </div>
 
@@ -980,7 +1264,9 @@ defineExpose({
           <div
             class="col-name"
             :class="{
-              'col-name-highlighted': state.highlightedColumns.has(col.dataIndex),
+              'col-name-highlighted': state.highlightedColumns.has(
+                col.dataIndex
+              ),
             }"
             :title="col.title"
           >
@@ -997,6 +1283,16 @@ defineExpose({
               :max="500"
               hide-button
             />
+          </div>
+          <div class="col-fixed">
+            <a-select v-model="col.fixed" :style="{ width: '90px' }">
+              <a-option :value="false">不固定</a-option>
+              <a-option value="left">左固定</a-option>
+              <a-option value="right">右固定</a-option>
+            </a-select>
+          </div>
+          <div class="col-ellipsis">
+            <a-checkbox v-model="col.ellipsis" />
           </div>
           <div class="col-actions">
             <a-button-group size="small">
@@ -1027,7 +1323,9 @@ defineExpose({
     <!-- 多条记录选择弹窗 -->
     <a-modal
       :visible="state.viewListVisible"
-      :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
+      :title="
+        state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'
+      "
       @update:visible="(val) => (state.viewListVisible = val)"
       :ok-text="null"
       :cancel-text="null"
@@ -1093,10 +1391,78 @@ defineExpose({
         ></slot>
       </template>
     </TableForm>
+
+    <TableInfo
+      v-model:visible="visibleTableInfo"
+      :config="config"
+    />
+
+    <!-- 右键菜单 -->
+    <div
+      v-show="state.contextMenuVisible"
+      class="context-menu"
+      :style="{
+        left: state.contextMenuPosition.x + 'px',
+        top: state.contextMenuPosition.y + 'px',
+      }"
+      @click.stop="closeContextMenu"
+      @contextmenu.prevent
+    >
+      <div v-if="contextMenuActions.length === 0" class="context-menu-empty">
+        暂无操作
+      </div>
+      <div
+        v-else
+        v-for="action in contextMenuActions"
+        :key="action.key"
+        class="context-menu-item"
+        :class="{ 'disabled': action.disabled }"
+        @click="!action.disabled && handleActionClick(action)"
+      >
+        {{ action.label }}
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #eee;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  padding: 4px 0;
+  min-width: 100px;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.context-menu-item:hover {
+  background-color: #f5f7fa;
+  color: rgb(var(--primary-6));
+}
+
+.context-menu-item.disabled {
+  color: #c9cdd4;
+  cursor: not-allowed;
+  background-color: transparent;
+}
+
+.context-menu-empty {
+  padding: 8px 16px;
+  color: #999;
+  font-size: 12px;
+  text-align: center;
+}
+
 .arco-table-container {
   padding: 16px;
   background: #fff;
@@ -1207,7 +1573,7 @@ defineExpose({
 
 .column-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 0.8fr;
+  grid-template-columns: 2fr 0.8fr 1.2fr 1.2fr 0.8fr 0.8fr;
   gap: 12px;
   padding: 8px;
   background: #fafafa;
@@ -1225,7 +1591,7 @@ defineExpose({
 
 .column-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 0.8fr;
+  grid-template-columns: 2fr 0.8fr 1.2fr 1.2fr 0.8fr 0.8fr;
   gap: 12px;
   padding: 8px;
   border-bottom: 1px solid #f0f0f0;

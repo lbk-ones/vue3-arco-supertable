@@ -1,6 +1,6 @@
 import { App } from 'vue';
 import type { TableProps, TableEmits, TableExpose, TableConfig, TableColumn, TableAction, SearchField, SearchOption } from './Table';
-import Table from './components/Table.vue';
+import Table from '../components/Table.vue';
 
 // 定义 SuperTable 组件类型
 export declare const SuperTable: typeof Table;

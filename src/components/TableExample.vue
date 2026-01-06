@@ -3,7 +3,7 @@ import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
 import { reactive, ref, computed, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
-import TableConfigEditor from "../TableConfigEditor.vue";
+import TableConfigEditor from "./TableConfigEditor.vue";
 import SuperTable from "./Table.vue";
 import { del, post, put } from "../request.js";
 const tableRef = ref(null);
@@ -658,6 +658,18 @@ const tableConfig = reactive({
     "hide-on-single-page": true,
   },
 
+  // 表格唯一标识 (必填，开启本地存储时需要)
+  uniqueId: "personal_info",
+
+  // 用户自定义代码 (可选，用于区分不同用户配置)
+  userCode: "",
+
+  // 是否启用本地存储
+  enableLocalStorage: true,
+
+  // 是否启用右键菜单
+  contextMenuEnabled: true,
+
   // 执行操作按钮的回调 edit 和 view 不会进入这个回调 因为它们是弹窗形式的操作
   executeAction: async (action, records, params) => {
     // records: 为选中的数据数组
@@ -744,7 +756,8 @@ const tableConfig = reactive({
       console.log("编辑数据:", data);
       if (config.paginationType === "frontend") {
         const index = tableData.value.findIndex(
-          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+          (item) =>
+            item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
         );
         if (index !== -1) {
           tableData.value[index] = {
@@ -792,7 +805,8 @@ const showConfig = ref(false);
 const paginationType = ref("frontend");
 
 const switchPaginationType = () => {
-  paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
+  paginationType.value =
+    paginationType.value === "frontend" ? "backend" : "frontend";
   tableConfig.paginationType = paginationType.value;
   if (tableConfig.paginationType === "backend") {
     // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
@@ -807,7 +821,9 @@ const switchPaginationType = () => {
   } else {
     window.location.reload();
   }
-  Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
+  Message.info(
+    `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
+  );
 };
 const textareaValue = computed(() => {
   return JSON.parse(JSON.stringify(tableConfig, null, 8));
@@ -819,14 +835,22 @@ const textareaValue = computed(() => {
     <a-col :span="16">
       <div class="example-container">
         <h1
-          style="display: flex; align-items: center; justify-content: center; gap: 10px"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+          "
         >
           基于Arco的超级表格组件示例
           <a-button type="outline" size="large" @click="switchPaginationType"
             >切换分页模式（当前：{{ paginationType }}）</a-button
           >
 
-          <a-button type="outline" size="large" @click="() => (showConfig = true)"
+          <a-button
+            type="outline"
+            size="large"
+            @click="() => (showConfig = true)"
             >配置编辑</a-button
           >
         </h1>
@@ -839,13 +863,26 @@ const textareaValue = computed(() => {
           v-model:loading="loading"
           v-model:selectedKeys="selectedKeys"
         >
+          <template #table-top>
+            <a-alert>这是一个表格上方插槽示例</a-alert>
+          </template>
+          <template #table-bottom>
+            <a-alert>这是一个表格下方插槽示例</a-alert>
+          </template>
           <!-- <template #toolbar="{ size }">
             <a-button type="secondary" :size="size"> 导入 </a-button>
             <a-button type="secondary" :size="size"> 导出 </a-button>
           </template> -->
 
           <template
-            #phone-input="{ domRef, field, formData, disabled, attrs, handleEnter }"
+            #phone-input="{
+              domRef,
+              field,
+              formData,
+              disabled,
+              attrs,
+              handleEnter,
+            }"
           >
             <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
             <a-space :size="8">
@@ -862,7 +899,9 @@ const textareaValue = computed(() => {
           </template>
 
           <!-- 其实预留了这个组件的 这里只是做个测试而已 -->
-          <template #enable-switch="{ field, formData, disabled, attrs, handleUpdate }">
+          <template
+            #enable-switch="{ field, formData, disabled, attrs, handleUpdate }"
+          >
             <a-space :size="8">
               <a-switch
                 :model-value="formData[field.dataIndex]"
