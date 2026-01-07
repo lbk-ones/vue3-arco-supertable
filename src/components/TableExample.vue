@@ -593,7 +593,7 @@ const tableConfig = reactive({
       label: "其他",
       icon: "edit",
       type: "outline",
-      needSelect: true,
+      needSelect: false,
       isFetchData: false,
       // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
@@ -886,7 +886,7 @@ const textareaValue = computed(() => {
           <template #table-bottom>
             <a-alert>这是一个表格下方插槽示例</a-alert>
           </template>
-          <!-- <template #toolbar="{ size }">
+          <!-- <template #actions-right="{ size }">
             <a-button type="secondary" :size="size"> 导入 </a-button>
             <a-button type="secondary" :size="size"> 导出 </a-button>
           </template> -->

@@ -955,7 +955,7 @@ defineExpose({
             :key="action.key"
             :type="
               action.type === 'confirm'
-                ? 'secondary'
+                ? 'outline'
                 : action.type
                 ? action.type
                 : 'secondary'
@@ -973,7 +973,8 @@ defineExpose({
           >
             {{ action.label }}
           </a-button>
-        </a-button-group>
+        </a-button-group>   
+        <slot name="actions-left" :size="config.tableSize || 'small'" />
       </div>
 
       <!-- 右侧：搜索、列配置和导出按钮 -->
@@ -1015,7 +1016,7 @@ defineExpose({
           <icon-info-circle />
         </a-button>
 
-        <slot name="toolbar" :size="config.tableSize || 'small'" />
+        <slot name="actions-right" :size="config.tableSize || 'small'" />
       </div>
     </div>
 
