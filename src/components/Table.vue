@@ -1,5 +1,14 @@
 <script setup>
-import { reactive, computed, onUnmounted, onMounted, watch, ref } from "vue";
+import {
+  reactive,
+  computed,
+  onUnmounted,
+  onMounted,
+  watch,
+  ref,
+  onBeforeUpdate,
+  readonly
+} from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 import TableInfo from "./TableInfo.vue";
@@ -214,6 +223,9 @@ const state = reactive({
 
 const visibleTableInfo = ref(false); // 表格信息弹窗
 
+// 表格表单引用
+const tableFormRef = ref(null);
+
 // 环境检查
 const isBrowser = typeof window !== "undefined";
 
@@ -378,7 +390,6 @@ const updateStateColumns = (columns) => {
 // 初始化列配置
 const initializeColumns = () => {
   if (!props.config.columns) return;
-
   let finalColumns = JSON.parse(JSON.stringify(props.config.columns));
 
   // 尝试加载本地存储
@@ -415,7 +426,17 @@ watch(
       saveConfigToStorage("latestValue", state.columnConfig);
     }
   },
-  { deep: true }
+  { deep: true}
+);
+const columnLength = computed(() => props.config?.columns?.length ?? 0);
+// 监听 columns 变化，初始化列配置 只有长度变化才重新初始化
+watch(
+  columnLength,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      initializeColumns();
+    }
+  }
 );
 
 // 获取显示的列（不包括操作列）
@@ -655,7 +676,7 @@ const contextMenuActions = computed(() => {
 // 是否需要选择数据默认为true
 const isNeedSelect = (action) => {
   return action.needSelect !== void 0 ? action.needSelect : true;
-}
+};
 
 // 操作按钮点击（传递选中的行数组）
 const handleActionClick = (action) => {
@@ -749,9 +770,12 @@ const executeAction = async (action, records) => {
       return;
     }
     let isFetchData = action.isFetchData !== void 0 ? action.isFetchData : true;
-    let isClearSelect = isNeedSelect(action) && action.isClearSelect !== void 0 ? action.isClearSelect : true;
-    if(isFetchData) await fetchData();
-    if(isClearSelect) emit("update:selectedKeys", []);
+    let isClearSelect =
+      isNeedSelect(action) && action.isClearSelect !== void 0
+        ? action.isClearSelect
+        : true;
+    if (isFetchData) await fetchData();
+    if (isClearSelect) emit("update:selectedKeys", []);
 
     if (action.message) {
       Message.success(action.message);
@@ -913,9 +937,16 @@ const isDisabled = (field) => {
   }
   return disabled === true;
 };
-
 defineExpose({
   fetchData,
+  closeForm: () => tableFormRef.value?.closeForm?.(),
+  getFormData: () => tableFormRef.value?.getFormData?.(),
+  // 提交表单
+  handleSubmit: () => tableFormRef.value?.handleSubmit?.(),
+  // 初始化表单数据
+  initializeFormData: () => tableFormRef.value?.initializeFormData?.(),
+  // 初始化表格列配置
+  initializeColumns: () => initializeColumns(),
 });
 </script>
 
@@ -973,7 +1004,7 @@ defineExpose({
           >
             {{ action.label }}
           </a-button>
-        </a-button-group>   
+        </a-button-group>
         <slot name="actions-left" :size="config.tableSize || 'small'" />
       </div>
 
@@ -1204,7 +1235,6 @@ defineExpose({
           : undefined
       "
       :selected-keys="props.selectedKeys"
-      @update:selected-keys="(keys) => emit('update:selectedKeys', keys)"
       @selection-change="handleSelectionChange"
       @row-click="handleRowClick"
       @row-contextmenu="handleRowContextMenu"
@@ -1425,6 +1455,7 @@ defineExpose({
 
     <!-- 表单弹窗 -->
     <TableForm
+      :ref="(ref) => (tableFormRef = ref)"
       v-if="config.showForm"
       :visible="state.formVisible"
       :modalWidth="config.modalWidth"
@@ -1436,7 +1467,7 @@ defineExpose({
       :record="state.formRecord"
       :columns="config.columns"
       :config="config"
-      :selected-keys="props.selectedKeys"
+      :selected-keys="readonly(props.selectedKeys)"
       @update:visible="formModalChangeVisible"
       @update:selected-keys="(val) => emit('update:selectedKeys', val)"
       @submit="handleFormSubmit"

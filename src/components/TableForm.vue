@@ -1,6 +1,6 @@
 <script setup>
 import TableFormFieldItem from "./TableFormFieldItem.vue";
-import { reactive, ref, computed, onMounted, watch, nextTick, toRaw } from "vue";
+import { reactive, ref, computed, onMounted, watch, nextTick, toRaw,onBeforeUpdate } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 
 // Props 定义
@@ -374,6 +374,10 @@ watch(
 // 暴露更新方法给父组件（如果需要手动更新）
 defineExpose({
   initializeFormData,
+  closeForm: handleCancel,
+  getFormData: () => toRaw(state.formData),
+  // 提交表单
+  handleSubmit,
 });
 </script>
 

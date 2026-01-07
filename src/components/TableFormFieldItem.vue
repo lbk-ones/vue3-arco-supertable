@@ -1,6 +1,6 @@
 <script setup>
 import SuperTable from "./Table.vue";
-import { onMounted, reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch,onBeforeUpdate } from "vue";
 // Props 定义
 const props = defineProps({
   // 字段配置
@@ -38,6 +38,7 @@ const props = defineProps({
     type: [String, Number, Boolean, Array, Object, Date],
     default: null,
   },
+  // 这个是父组件传过来的表格选中的行key，这里其实并没有用到
   selectedKeys: {
     type: Array,
     default: () => [],
@@ -78,7 +79,9 @@ const getNextFocusableField = () => {
   }
 
   // 从指定的dataIndex开始查找，跳过不支持回车的组件
-  let searchIndex = props.allFields.findIndex((f) => f.dataIndex === targetDataIndex);
+  let searchIndex = props.allFields.findIndex(
+    (f) => f.dataIndex === targetDataIndex
+  );
 
   if (searchIndex === -1) {
     return null;
@@ -108,12 +111,19 @@ const handleEnter = () => {
   const nextFieldIndex = getNextFocusableField();
   if (nextFieldIndex && props.onEnterNext) {
     props.onEnterNext(nextFieldIndex);
+
+    if (
+      props?.field?.form?.enterFunction &&
+      typeof props?.field?.form?.enterFunction === "function"
+    ) {
+      props.field.form.enterFunction(props.field, props.formData);
+    }
   }
 };
 
 onMounted(() => {
   // 初始化表格字段的 selectedKeys
-  if (props.field.form.type === "table") {
+  if (props?.field?.form?.type === "table") {
     formSelectedKeys[props.field.dataIndex] = [];
   }
 });
@@ -121,7 +131,7 @@ const handleUpdate = (value) => {
   emit("update:modelValue", value);
 };
 const clearSelectedKeys = () => {
-  if (props.field.form.type === "table") {
+  if (props?.field?.form?.type === "table") {
     formSelectedKeys[props.field.dataIndex] = [];
   }
 };
@@ -137,12 +147,16 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     datas.push({
       ...data,
       _rowIndex: datas.length,
-      [props.field.form.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
+      [props.field.form.tableConfig?.rowKey || "key"]: String(
+        Date.now() + Math.random()
+      ),
     });
     handleUpdate(datas);
   } else if (mode == "edit") {
     let datas = props.formData[props.field.dataIndex];
-    const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
+    const index = datas.findIndex(
+      (item) => item._rowIndex === record._rowIndex
+    );
     if (index !== -1) {
       datas[index] = {
         ...datas[index],
@@ -164,14 +178,15 @@ const focus = () => {
         ?.querySelector("input");
       if (focusableElement && focusableElement.focus) {
         focusableElement.focus();
-        if (["select", "date", "time", "datetime"].includes(props.field.form.type)) {
+        if (
+          ["select", "date", "time", "datetime"].includes(props.field.form.type)
+        ) {
           popupVisible.value = true;
         }
       }
     }
   }
 };
-
 defineExpose({
   clearSelectedKeys,
   focus,
@@ -180,86 +195,88 @@ defineExpose({
 
 <template>
   <!-- 隐藏字段处理 -->
-  <div v-if="field.form.type === 'hidden'" style="display: none">
-    <input :value="formData[field.dataIndex]" type="hidden" />
+  <div v-if="props?.field?.form?.type === 'hidden'" style="display: none">
+    <input :value="props.formData[props.field.dataIndex]" type="hidden" />
   </div>
 
   <!-- 文本输入框 -->
   <a-form-item
-    v-else-if="field.form.type === 'input' || !field.form.type"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="
+      props?.field?.form?.type === 'input' || !props?.field?.form?.type
+    "
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-input
       :ref="(ref) => (dom = ref)"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @keydown.enter="handleEnter"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 数字输入框 -->
   <a-form-item
-    v-else-if="field.form.type === 'number'"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="props?.field?.form?.type === 'number'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-input-number
       :ref="(ref) => (dom = ref)"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @keydown.enter="handleEnter"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 文本域 -->
   <a-form-item
-    v-else-if="field.form.type === 'textarea'"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="props?.field?.form?.type === 'textarea'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-textarea
       :ref="(ref) => (dom = ref)"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 复选框 -->
   <a-form-item
-    v-else-if="field.form.type === 'checkbox'"
-    :field="field.dataIndex"
-    :label="field.title"
+    v-else-if="props?.field?.form?.type === 'checkbox'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
   >
     <a-checkbox-group
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     >
       <a-checkbox
-        v-for="option in getOptions(field)"
+        v-for="option in getOptions(props.field)"
         :key="option.value"
         :value="option.value"
         :disabled="
           typeof option.disabled === 'function'
-            ? option.disabled(formData, field)
+            ? option.disabled(props.formData, props.field)
             : option.disabled
         "
       >
@@ -270,24 +287,24 @@ defineExpose({
 
   <!-- 单选框 -->
   <a-form-item
-    v-else-if="field.form.type === 'radio'"
-    :field="field.dataIndex"
-    :label="field.title"
+    v-else-if="props?.field?.form?.type === 'radio'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
   >
     <a-radio-group
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     >
       <a-radio
-        v-for="option in getOptions(field)"
+        v-for="option in getOptions(props.field)"
         :key="option.value"
         :value="option.value"
         :disabled="
           typeof option.disabled === 'function'
-            ? option.disabled(formData, field)
+            ? option.disabled(props.formData, props.field)
             : option.disabled
         "
       >
@@ -298,29 +315,29 @@ defineExpose({
 
   <!-- 下拉选择框 -->
   <a-form-item
-    v-else-if="field.form.type === 'select'"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="props?.field?.form?.type === 'select'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-select
       :ref="(ref) => (dom = ref)"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       v-model:popup-visible="popupVisible"
       @change="handleEnter"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     >
       <a-option
-        v-for="option in getOptions(field)"
+        v-for="option in getOptions(props.field)"
         :key="option.value"
         :value="option.value"
         :disabled="
           typeof option.disabled === 'function'
-            ? option.disabled(formData, field)
+            ? option.disabled(props.formData, props.field)
             : option.disabled
         "
       >
@@ -331,143 +348,143 @@ defineExpose({
 
   <!-- 日期选择器 -->
   <a-form-item
-    v-else-if="field.form.type === 'date'"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="props?.field?.form?.type === 'date'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-date-picker
       :ref="(ref) => (dom = ref)"
       v-model:popup-visible="popupVisible"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @change="handleEnter"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 时间选择器 -->
   <a-form-item
-    v-else-if="field.form.type === 'time'"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="props?.field?.form?.type === 'time'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-time-picker
       :ref="(ref) => (dom = ref)"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       v-model:popup-visible="popupVisible"
       @change="handleEnter"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 日期时间选择器 -->
   <a-form-item
-    v-else-if="field.form.type === 'datetime'"
-    :field="field.dataIndex"
-    :label="field.title"
-    :validate-status="formErrors[field.dataIndex] ? 'error' : ''"
-    :help="formErrors[field.dataIndex]"
+    v-else-if="props?.field?.form?.type === 'datetime'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
   >
     <a-date-picker
       :ref="(ref) => (dom = ref)"
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @change="handleEnter"
       v-model:popup-visible="popupVisible"
       show-time
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 开关 -->
   <a-form-item
-    v-else-if="field.form.type === 'switch'"
-    :field="field.dataIndex"
-    :label="field.title"
+    v-else-if="props?.field?.form?.type === 'switch'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
   >
     <a-switch
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 滑块 -->
   <a-form-item
-    v-else-if="field.form.type === 'slider'"
-    :field="field.dataIndex"
-    :label="field.title"
+    v-else-if="props?.field?.form?.type === 'slider'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
   >
     <a-slider
-      :model-value="formData[field.dataIndex]"
+      :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
-      :disabled="isFieldDisabled(field)"
-      v-bind="getFieldAttrs(field)"
-      v-on="getFieldAttrs(field)"
+      :disabled="props.isFieldDisabled(props.field)"
+      v-bind="props.getFieldAttrs(props.field)"
+      v-on="props.getFieldAttrs(props.field)"
     />
   </a-form-item>
 
   <!-- 动态插槽 -->
   <a-form-item
-    v-else-if="field.form.type === 'slot' && field.form.slotName"
-    :field="field.dataIndex"
-    :label="field.title"
+    v-else-if="props?.field?.form?.type === 'slot' && props.field.form.slotName"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
   >
     <slot
-      :name="field.form.slotName"
+      :name="props.field.form.slotName"
       :domRef="(ref) => (dom = ref)"
-      :field="field"
+      :field="props.field"
       :handleUpdate="handleUpdate"
       :handleEnter="handleEnter"
-      :formData="formData"
-      :disabled="isFieldDisabled(field)"
-      :attrs="getFieldAttrs(field)"
+      :formData="props.formData"
+      :disabled="props.isFieldDisabled(props.field)"
+      :attrs="props.getFieldAttrs(props.field)"
     >
       <!-- 默认内容 -->
-      <div style="color: red">请提供 {{ field.form.slotName }} 插槽</div>
+      <div style="color: red">请提供 {{ props.field.form.slotName }} 插槽</div>
     </slot>
   </a-form-item>
-
+  
   <!-- 表格 -->
   <a-form-item
-    v-else-if="field.form.type === 'table'"
-    :field="field.dataIndex"
-    :label="field.title"
+    v-else-if="props?.field?.form?.type === 'table'"
+    :field="props.field.dataIndex"
+    :label="props.field.title"
     class="table-form-item"
   >
     <SuperTable
       :isFormItem="true"
-      :table-disabled="isFieldDisabled(field)"
+      :table-disabled="props.isFieldDisabled(props.field)"
       :config="{
-        ...(field.form?.tableConfig ?? {}),
+        ...(props.field.form?.tableConfig ?? {}),
         handleFormSubmit: handleFormSubmit,
         executeAction: async (action, records, params) => {
           if (action.key == 'delete') {
-            let datas = formData[field.dataIndex];
+            let datas = props.formData[props.field.dataIndex];
             datas.splice(records._rowIndex, 1);
             handleUpdate(datas);
           }
         },
       }"
-      :data="formData[field.dataIndex] || []"
-      :loading="field.form.tableConfig?.loading"
-      :selectedKeys="formSelectedKeys[field.dataIndex]"
+      :data="props.formData[props.field.dataIndex] || []"
+      :loading="props.field.form.tableConfig?.loading"
+      :selectedKeys="formSelectedKeys[props.field.dataIndex]"
       @update:selectedKeys="
         (val) => {
-          formSelectedKeys[field.dataIndex] = val;
+          formSelectedKeys[props.field.dataIndex] = val;
         }
       "
     />

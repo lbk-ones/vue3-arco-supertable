@@ -212,7 +212,7 @@
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `type` | `String` | `'input'` | 控件类型：`'input'`, `'select'`, `'number'`, `'date'`, `'radio'`, `'switch'`, `'textarea'`, `'slot'`, `'table'` |
-| `slotName` | `String` | - | 自定义表单插槽名（当 `type` 为 `'slot'` 时必填） |
+| `slotName` | `String` | - | 自定义表单项插槽名 （当 `type` 为 `'slot'` 时必填）   |
 | `creatable` | `Boolean` | `true` | 新增时是否显示 |
 | `editable` | `Boolean` | `true` | 编辑时是否显示 |
 | `required` | `Boolean` | `false` | 是否必填 |
@@ -220,12 +220,13 @@
 | `enterNext` | `String` | - | 回车后跳转到的下一个字段名 |
 | `oneRow` | `Boolean` | `false` | 表单是否独占一行 |
 | `columns` | `Number` | `0` | 表单项所占列数，`0` 代表不生效 |
+| `defaultValue` | `*` | - | 默认值 |
 | `disabled` | `Boolean \| Function` | - | 是否禁用，支持函数 `(formData, field) => boolean` |
 | `validator` | `Function` | - | 自定义校验函数 `(value, field, mode) => string` |
-| `attrs` | `Object` | `{}` | 透传给 Arco 组件的属性或事件 |
 | `options` | `Array \| Function` | - | 选项数组（用于 `select`, `radio`, `checkbox`） |
 | `tableConfig` | `Object` | - | 子表格配置（当 `type` 为 `'table'` 时生效），结构同根配置 |
-
+| `enterFunction` | `Function` | - | 回车后触发的函数 `(field, formData) => void` |
+| `attrs` | `Object` | `{}` | 透传给 Arco 组件的属性或事件 |
 ### 示例
 
 ```javascript
@@ -250,11 +251,12 @@ columns: [
     // 表单配置（用于新增/编辑弹窗） 没有这个字段就代表弹窗里面不会出现这个字段
     form: {
       type: 'input',        // 控件类型：'input', 'select', 'number', 'date', 'radio', 'switch', 'textarea', 'slot', 'table'
-      slotName: 'name-form',// 自定义表单插槽名（可选）当columns.[].form.type === 'slot' 的时候必填
+      slotName: 'name-form',// 定义表单项插槽名 （当 `type` 为 `'slot'` 时必填）
       creatable: true,      // 新增时是否显示
       editable: true,       // 编辑时是否显示
       required: true,       // 是否必填
       placeholder: '请输入',
+      defaultValue: null,    // 默认值
       enterNext: 'age',     // 回车后跳转到的下一个字段名（提升录入体验）
       oneRow: true,         // 表单是否独占一行
       columns: 0,           // 这个表单项所占列数 0代表不生效

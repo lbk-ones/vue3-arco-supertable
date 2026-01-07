@@ -289,6 +289,7 @@ const tableConfig = reactive({
         columns: 1, // 占两列
         editable: true,
         required: true,
+        oneRow:false,
         placeholder: "我是个插槽",
         enterNext: "remark", // 回车聚焦到电话字段
       },
@@ -842,9 +843,31 @@ const switchPaginationType = () => {
     `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
   );
 };
+const inputNum = ref(0);
 const textareaValue = computed(() => {
   return JSON.parse(JSON.stringify(tableConfig, null, 8));
 });
+const handleAddPhone = ()=>{
+  let index = tableConfig.columns.findIndex(it=>{
+    return it.dataIndex === "phone"+(inputNum.value==0?"":inputNum.value)
+  })
+  inputNum.value++;
+  tableConfig.columns.splice(index+1,0,{
+    title: "电话"+inputNum.value,
+    dataIndex: "phone"+inputNum.value,
+    visible: true,
+    form: {
+      type: "input",
+      //slotName: "phone-input",
+      creatable: true,
+      editable: true,
+      required: true,
+      oneRow:false,
+      placeholder: "我是电话"+inputNum.value,
+      enterNext: "remark", // 回车聚焦到电话字段
+    },
+  })
+}
 </script>
 
 <template>
@@ -911,7 +934,7 @@ const textareaValue = computed(() => {
                 :placeholder="field.form.placeholder"
                 @keydown.enter="handleEnter"
               />
-              <a-button>+</a-button>
+              <a-button @click="handleAddPhone">+</a-button>
             </a-space>
           </template>
 
