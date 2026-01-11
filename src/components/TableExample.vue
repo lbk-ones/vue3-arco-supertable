@@ -152,6 +152,14 @@ const tableConfig = reactive({
   // 列配置
   columns: [
     {
+      title: "序号",
+      dataIndex: "_rowIndex",
+      width: 70,
+      visible: true,
+      fixed: "left",
+      align: "left",
+    },
+    {
       title: "姓名",
       dataIndex: "name",
       width: 160,
@@ -289,7 +297,7 @@ const tableConfig = reactive({
         columns: 1, // 占两列
         editable: true,
         required: true,
-        oneRow:false,
+        oneRow: false,
         placeholder: "我是个插槽",
         enterNext: "remark", // 回车聚焦到电话字段
       },
@@ -483,6 +491,7 @@ const tableConfig = reactive({
       attrs: {
         "max-length": 50,
       },
+      condition: "eq",
     },
     {
       dataIndex: "email",
@@ -524,6 +533,7 @@ const tableConfig = reactive({
       title: "薪资范围",
       type: "number",
       placeholder: "输入薪资",
+      condition: "le",
       attrs: {
         min: 0,
         max: 100000,
@@ -534,6 +544,7 @@ const tableConfig = reactive({
       dataIndex: "joinDate",
       title: "加入时间",
       type: "date-range",
+      //placeholder: "选择加入时间",
     },
     {
       dataIndex: "salary",
@@ -715,7 +726,7 @@ const tableConfig = reactive({
     }
   },
   // API 请求（后端分页）
-  pageFetchData: async (url, params) => {
+  pageFetchData: async (url, params, searchFields) => {
     // url 为 apiUrl
     // params 为分页和搜索参数对象
     /**
@@ -736,7 +747,8 @@ const tableConfig = reactive({
       ) {
         delete params.searchValues[key];
       } else {
-        keys.push([key, "eq", params.searchValues[key]]);
+        let findItem = searchFields?.find((item) => item.dataIndex === key);
+        keys.push([key, findItem?.condition || "eq", params.searchValues[key]]);
       }
     });
     loading.value = true;
@@ -774,8 +786,7 @@ const tableConfig = reactive({
       console.log("编辑数据:", data);
       if (config.paginationType === "frontend") {
         const index = tableData.value.findIndex(
-          (item) =>
-            item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
         );
         if (index !== -1) {
           tableData.value[index] = {
@@ -823,8 +834,7 @@ const showConfig = ref(false);
 const paginationType = ref("frontend");
 
 const switchPaginationType = () => {
-  paginationType.value =
-    paginationType.value === "frontend" ? "backend" : "frontend";
+  paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
   tableConfig.paginationType = paginationType.value;
   if (tableConfig.paginationType === "backend") {
     // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
@@ -839,22 +849,20 @@ const switchPaginationType = () => {
   } else {
     window.location.reload();
   }
-  Message.info(
-    `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
-  );
+  Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
 };
 const inputNum = ref(0);
 const textareaValue = computed(() => {
   return JSON.parse(JSON.stringify(tableConfig, null, 8));
 });
-const handleAddPhone = ()=>{
-  let index = tableConfig.columns.findIndex(it=>{
-    return it.dataIndex === "phone"+(inputNum.value==0?"":inputNum.value)
-  })
+const handleAddPhone = () => {
+  let index = tableConfig.columns.findIndex((it) => {
+    return it.dataIndex === "phone" + (inputNum.value == 0 ? "" : inputNum.value);
+  });
   inputNum.value++;
-  tableConfig.columns.splice(index+1,0,{
-    title: "电话"+inputNum.value,
-    dataIndex: "phone"+inputNum.value,
+  tableConfig.columns.splice(index + 1, 0, {
+    title: "电话" + inputNum.value,
+    dataIndex: "phone" + inputNum.value,
     visible: true,
     form: {
       type: "input",
@@ -862,12 +870,12 @@ const handleAddPhone = ()=>{
       creatable: true,
       editable: true,
       required: true,
-      oneRow:false,
-      placeholder: "我是电话"+inputNum.value,
+      oneRow: false,
+      placeholder: "我是电话" + inputNum.value,
       enterNext: "remark", // 回车聚焦到电话字段
     },
-  })
-}
+  });
+};
 </script>
 
 <template>
@@ -875,22 +883,14 @@ const handleAddPhone = ()=>{
     <a-col :span="16">
       <div class="example-container">
         <h1
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-          "
+          style="display: flex; align-items: center; justify-content: center; gap: 10px"
         >
           基于Arco的超级表格组件示例
           <a-button type="outline" size="large" @click="switchPaginationType"
             >切换分页模式（当前：{{ paginationType }}）</a-button
           >
 
-          <a-button
-            type="outline"
-            size="large"
-            @click="() => (showConfig = true)"
+          <a-button type="outline" size="large" @click="() => (showConfig = true)"
             >配置编辑</a-button
           >
         </h1>
@@ -915,14 +915,7 @@ const handleAddPhone = ()=>{
           </template> -->
 
           <template
-            #phone-input="{
-              domRef,
-              field,
-              formData,
-              disabled,
-              attrs,
-              handleEnter,
-            }"
+            #phone-input="{ domRef, field, formData, disabled, attrs, handleEnter }"
           >
             <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
             <a-space :size="8">
@@ -939,9 +932,7 @@ const handleAddPhone = ()=>{
           </template>
 
           <!-- 其实预留了这个组件的 这里只是做个测试而已 -->
-          <template
-            #enable-switch="{ field, formData, disabled, attrs, handleUpdate }"
-          >
+          <template #enable-switch="{ field, formData, disabled, attrs, handleUpdate }">
             <a-space :size="8">
               <a-switch
                 :model-value="formData[field.dataIndex]"

@@ -37,7 +37,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:types": "vue-tsc  --emitDeclarationOnly"
+    "local-pack": "pnpm run build && pnpm pack"
   },
   "dependencies": {
     "axios": "^1.13.2",

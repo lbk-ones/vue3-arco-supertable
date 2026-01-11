@@ -1,6 +1,6 @@
 <script setup>
 import SuperTable from "./Table.vue";
-import { onMounted, reactive, ref, watch,onBeforeUpdate } from "vue";
+import { onMounted, reactive, ref, watch, onBeforeUpdate } from "vue";
 // Props 定义
 const props = defineProps({
   // 字段配置
@@ -79,9 +79,7 @@ const getNextFocusableField = () => {
   }
 
   // 从指定的dataIndex开始查找，跳过不支持回车的组件
-  let searchIndex = props.allFields.findIndex(
-    (f) => f.dataIndex === targetDataIndex
-  );
+  let searchIndex = props.allFields.findIndex((f) => f.dataIndex === targetDataIndex);
 
   if (searchIndex === -1) {
     return null;
@@ -147,16 +145,12 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     datas.push({
       ...data,
       _rowIndex: datas.length,
-      [props.field.form.tableConfig?.rowKey || "key"]: String(
-        Date.now() + Math.random()
-      ),
+      [props.field.form.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
     });
     handleUpdate(datas);
   } else if (mode == "edit") {
     let datas = props.formData[props.field.dataIndex];
-    const index = datas.findIndex(
-      (item) => item._rowIndex === record._rowIndex
-    );
+    const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
     if (index !== -1) {
       datas[index] = {
         ...datas[index],
@@ -178,9 +172,7 @@ const focus = () => {
         ?.querySelector("input");
       if (focusableElement && focusableElement.focus) {
         focusableElement.focus();
-        if (
-          ["select", "date", "time", "datetime"].includes(props.field.form.type)
-        ) {
+        if (["select", "date", "time", "datetime"].includes(props.field.form.type)) {
           popupVisible.value = true;
         }
       }
@@ -201,9 +193,7 @@ defineExpose({
 
   <!-- 文本输入框 -->
   <a-form-item
-    v-else-if="
-      props?.field?.form?.type === 'input' || !props?.field?.form?.type
-    "
+    v-else-if="props?.field?.form?.type === 'input' || !props?.field?.form?.type"
     :field="props.field.dataIndex"
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
@@ -360,6 +350,7 @@ defineExpose({
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @change="handleEnter"
+      value-format="YYYY-MM-DD HH:mm:ss"
       :disabled="props.isFieldDisabled(props.field)"
       v-bind="props.getFieldAttrs(props.field)"
       v-on="props.getFieldAttrs(props.field)"
@@ -401,6 +392,7 @@ defineExpose({
       @change="handleEnter"
       v-model:popup-visible="popupVisible"
       show-time
+      value-format="YYYY-MM-DD HH:mm:ss"
       :disabled="props.isFieldDisabled(props.field)"
       v-bind="props.getFieldAttrs(props.field)"
       v-on="props.getFieldAttrs(props.field)"
@@ -457,7 +449,7 @@ defineExpose({
       <div style="color: red">请提供 {{ props.field.form.slotName }} 插槽</div>
     </slot>
   </a-form-item>
-  
+
   <!-- 表格 -->
   <a-form-item
     v-else-if="props?.field?.form?.type === 'table'"

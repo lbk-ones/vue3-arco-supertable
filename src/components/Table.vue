@@ -7,7 +7,7 @@ import {
   watch,
   ref,
   onBeforeUpdate,
-  readonly
+  readonly,
 } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
@@ -400,8 +400,7 @@ const initializeColumns = () => {
         const storedData = safeParse(localStorage.getItem(key));
         if (storedData) {
           // 优先加载 latestValue，其次 initialValue
-          const configToLoad =
-            storedData.latestValue || storedData.initialValue;
+          const configToLoad = storedData.latestValue || storedData.initialValue;
           if (configToLoad && Array.isArray(configToLoad)) {
             finalColumns = mergeConfig(finalColumns, configToLoad);
           }
@@ -426,18 +425,15 @@ watch(
       saveConfigToStorage("latestValue", state.columnConfig);
     }
   },
-  { deep: true}
+  { deep: true }
 );
 const columnLength = computed(() => props.config?.columns?.length ?? 0);
 // 监听 columns 变化，初始化列配置 只有长度变化才重新初始化
-watch(
-  columnLength,
-  (newVal, oldVal) => {
-    if (newVal !== oldVal) {
-      initializeColumns();
-    }
+watch(columnLength, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    initializeColumns();
   }
-);
+});
 
 // 获取显示的列（不包括操作列）
 const visibleColumns = computed(() => {
@@ -469,9 +465,7 @@ const getFilteredData = () => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find(
-          (f) => f.dataIndex === field
-        );
+        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -479,9 +473,7 @@ const getFilteredData = () => {
         switch (fieldType) {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
-              const itemValue = Array.isArray(fieldValue)
-                ? fieldValue
-                : [fieldValue];
+              const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
               return value.some((v) => itemValue.includes(v));
             }
             return true;
@@ -490,9 +482,7 @@ const getFilteredData = () => {
             if (Array.isArray(value) && value.length === 2) {
               const [startDate, endDate] = value;
               const itemDate = new Date(fieldValue);
-              return (
-                itemDate >= new Date(startDate) && itemDate <= new Date(endDate)
-              );
+              return itemDate >= new Date(startDate) && itemDate <= new Date(endDate);
             }
             return true;
 
@@ -557,15 +547,18 @@ const handleResetSearch = () => {
 
 // 获取后端数据
 const fetchData = async () => {
-  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
-    return;
+  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl) return;
   let loading = false;
   try {
-    let data = await props.config?.pageFetchData?.(props.config.pageApiUrl, {
-      pageNo: state.currentPage,
-      pageSize: state.pageSize,
-      searchValues: state.searchValues,
-    });
+    let data = await props.config?.pageFetchData?.(
+      props.config.pageApiUrl,
+      {
+        pageNo: state.currentPage,
+        pageSize: state.pageSize,
+        searchValues: state.searchValues,
+      },
+      props.config.searchFields || []
+    );
     loading = true;
     emit("update:loading", false);
     let records = data?.records || [];
@@ -573,6 +566,7 @@ const fetchData = async () => {
     //state.apiData = records || [];
     state.totalCount = parseInt(data?.total || 0);
   } catch (error) {
+    console.error("数据加载失败:", error);
     Message.error("数据加载失败");
   } finally {
     if (loading === false) emit("update:loading", false);
@@ -826,7 +820,7 @@ watch(
     state.highlightedColumns.clear();
     const matchingIndices = [];
     state.columnConfig.forEach((col, index) => {
-      if (col.title.toLowerCase().includes(newVal.toLowerCase())) {
+      if (col?.title?.toLowerCase()?.includes(newVal?.toLowerCase())) {
         state.highlightedColumns.add(col.dataIndex);
         matchingIndices.push(index);
       }
@@ -937,6 +931,20 @@ const isDisabled = (field) => {
   }
   return disabled === true;
 };
+const getPrepend = (field) => {
+  if (field.condition === "lt") {
+    return "<";
+  }
+  if (field.condition === "le") {
+    return "<=";
+  } else if (field.condition === "gt") {
+    return ">";
+  } else if (field.condition === "ge") {
+    return ">=";
+  } else {
+    return "";
+  }
+};
 defineExpose({
   fetchData,
   closeForm: () => tableFormRef.value?.closeForm?.(),
@@ -962,11 +970,9 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span
-          style="font-weight: 700; font-size: 1rem"
-          v-if="!!config.cnDesc"
-          >{{ config.cnDesc || "" }}</span
-        >
+        <span style="font-weight: 700; font-size: 1rem" v-if="!!config.cnDesc">{{
+          config.cnDesc || ""
+        }}</span>
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
@@ -1021,7 +1027,9 @@ defineExpose({
 
         <!-- 搜索按钮 🔍 -->
         <a-button
-          v-if="config.searchFields && !config.showSearchBar"
+          v-if="
+            config.searchFields && config.searchFields.length > 0 && !config.showSearchBar
+          "
           type="outline"
           @click="state.visibleSearchBar = !state.visibleSearchBar"
           :size="config.tableSize || 'small'"
@@ -1100,6 +1108,7 @@ defineExpose({
             <!-- 数字输入框搜索 -->
             <template v-else-if="field.type === 'number'">
               <a-input-number
+                :prepend="getPrepend(field)"
                 v-model="state.searchValues[field.dataIndex]"
                 :placeholder="field.placeholder || `搜索${field.title}`"
                 allow-clear
@@ -1167,11 +1176,11 @@ defineExpose({
               <a-range-picker
                 v-model="state.searchValues[field.dataIndex]"
                 :placeholder="
-                  field.placeholder || [
-                    `${field.title}开始`,
-                    `${field.title}结束`,
-                  ]
+                  field.placeholder
+                    ? [field.placeholder, field.placeholder]
+                    : [`${field.title}开始`, `${field.title}结束`]
                 "
+                value-format="YYYY-MM-DD HH:mm:ss"
                 :size="config.tableSize || 'small'"
                 @change="handleSearch"
                 v-bind="field.attrs || {}"
@@ -1257,17 +1266,22 @@ defineExpose({
       <template #status-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-              ?.statusMap?.[record[column.dataIndex]]?.color || 'blue'
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
+              record[column.dataIndex]
+            ]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-              ?.statusMap?.[record[column.dataIndex]]?.label || record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
+              record[column.dataIndex]
+            ]?.label || record.status
           }}
         </a-tag>
       </template>
-
+      <!-- 序号列 -->
+      <template #_rowIndex-cell="{ rowIndex }">
+        <span>{{ rowIndex + 1 }}</span>
+      </template>
       <!-- 操作列 -->
       <template #operations-cell="{ record }" v-if="config.showForm">
         <a-button-group size="small">
@@ -1287,10 +1301,7 @@ defineExpose({
 
     <!-- 分页 -->
     <div v-if="config.paginationType !== 'none'" class="table-pagination">
-      <span
-        >共 {{ totalCount }} 条数据，已选择
-        {{ props.selectedKeys.length }} 条</span
-      >
+      <span>共 {{ totalCount }} 条数据，已选择 {{ props.selectedKeys.length }} 条</span>
       <a-pagination
         :current="state.currentPage"
         :page-size="state.pageSize"
@@ -1328,9 +1339,7 @@ defineExpose({
           allow-clear
           style="flex: 1; max-width: 300px"
         />
-        <a-button type="secondary" @click="handleResetColumnConfig"
-          >配置还原</a-button
-        >
+        <a-button type="secondary" @click="handleResetColumnConfig">配置还原</a-button>
       </div>
 
       <div class="column-config-grid">
@@ -1353,9 +1362,7 @@ defineExpose({
           <div
             class="col-name"
             :class="{
-              'col-name-highlighted': state.highlightedColumns.has(
-                col.dataIndex
-              ),
+              'col-name-highlighted': state.highlightedColumns.has(col.dataIndex),
             }"
             :title="col.title"
           >
@@ -1412,9 +1419,7 @@ defineExpose({
     <!-- 多条记录选择弹窗 -->
     <a-modal
       :visible="state.viewListVisible"
-      :title="
-        state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'
-      "
+      :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
       @update:visible="(val) => (state.viewListVisible = val)"
       :ok-text="null"
       :cancel-text="null"
