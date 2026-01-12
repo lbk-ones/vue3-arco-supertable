@@ -408,8 +408,7 @@ const initializeColumns = () => {
         const storedData = safeParse(localStorage.getItem(key));
         if (storedData) {
           // 优先加载 latestValue，其次 initialValue
-          const configToLoad =
-            storedData.latestValue || storedData.initialValue;
+          const configToLoad = storedData.latestValue || storedData.initialValue;
           if (configToLoad && Array.isArray(configToLoad)) {
             finalColumns = mergeConfig(finalColumns, configToLoad);
           }
@@ -453,9 +452,11 @@ const visibleColumns = computed(() => {
 
 // 表单列
 const formColumns = computed(() => {
-  return props?.config?.columns?.filter?.(
-    (col) => col?.form?.type === 'slot' && col?.form?.slotName
-  ) ?? [];
+  return (
+    props?.config?.columns?.filter?.(
+      (col) => col?.form?.type === "slot" && col?.form?.slotName
+    ) ?? []
+  );
 });
 
 // 获取表格数据
@@ -481,9 +482,7 @@ const getFilteredData = () => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find(
-          (f) => f.dataIndex === field
-        );
+        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -491,9 +490,7 @@ const getFilteredData = () => {
         switch (fieldType) {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
-              const itemValue = Array.isArray(fieldValue)
-                ? fieldValue
-                : [fieldValue];
+              const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
               return value.some((v) => itemValue.includes(v));
             }
             return true;
@@ -502,9 +499,7 @@ const getFilteredData = () => {
             if (Array.isArray(value) && value.length === 2) {
               const [startDate, endDate] = value;
               const itemDate = new Date(fieldValue);
-              return (
-                itemDate >= new Date(startDate) && itemDate <= new Date(endDate)
-              );
+              return itemDate >= new Date(startDate) && itemDate <= new Date(endDate);
             }
             return true;
 
@@ -569,8 +564,7 @@ const handleResetSearch = () => {
 
 // 获取后端数据
 const fetchData = async () => {
-  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
-    return;
+  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl) return;
   let loading = false;
   try {
     let data = await props.config?.pageFetchData?.(
@@ -611,7 +605,7 @@ const handlePageSizeChange = (pageSize) => {
   if (props.config.paginationType === "backend") {
     fetchData();
   }
-  props.config?.handlePageChange?.({ page, pageSize: state.pageSize });
+  props.config?.handlePageChange?.({ page: state.currentPage, pageSize: state.pageSize });
 };
 
 // 行选择
@@ -696,9 +690,7 @@ const contextMenuActions = computed(() => {
 
 // 过滤可见的操作按钮
 const visibleActions = computed(() => {
-  return (props.config.actions || []).filter(
-    (action) => action.visible !== false
-  );
+  return (props.config.actions || []).filter((action) => action.visible !== false);
 });
 
 // 是否需要选择数据默认为true
@@ -724,9 +716,7 @@ const handleActionClick = (action, record) => {
       );
       // 检查操作是否禁用
       if (disabledSelectedRecords.length > 0) {
-        let keys = disabledSelectedRecords
-          .map((item) => item[getKeyName()])
-          .join(",");
+        let keys = disabledSelectedRecords.map((item) => item[getKeyName()]).join(",");
         Message.warning(`操作已禁用：${keys}`);
         return;
       }
@@ -1021,11 +1011,9 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span
-          style="font-weight: 700; font-size: 1rem"
-          v-if="!!config.cnDesc"
-          >{{ config.cnDesc || "" }}</span
-        >
+        <span style="font-weight: 700; font-size: 1rem" v-if="!!config.cnDesc">{{
+          config.cnDesc || ""
+        }}</span>
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
@@ -1040,10 +1028,7 @@ defineExpose({
 
         <!-- 操作按钮 -->
         <a-button-group
-          v-if="
-            visibleActions.length > 0 &&
-            props.config.showTopLeftActions !== false
-          "
+          v-if="visibleActions.length > 0 && props.config.showTopLeftActions !== false"
         >
           <a-button
             v-for="action in visibleActions"
@@ -1087,9 +1072,7 @@ defineExpose({
         <!-- 搜索按钮 🔍 -->
         <a-button
           v-if="
-            config.searchFields &&
-            config.searchFields.length > 0 &&
-            !config.showSearchBar
+            config.searchFields && config.searchFields.length > 0 && !config.showSearchBar
           "
           type="outline"
           @click="state.visibleSearchBar = !state.visibleSearchBar"
@@ -1327,14 +1310,15 @@ defineExpose({
       <template #_tag-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-              ?.tagMap?.[record[column.dataIndex]]?.color || 'blue'
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.tagMap?.[
+              record[column.dataIndex]
+            ]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-              ?.tagMap?.[record[column.dataIndex]]?.label ||
-            record[column.dataIndex]
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.tagMap?.[
+              record[column.dataIndex]
+            ]?.label || record[column.dataIndex]
           }}
         </a-tag>
       </template>
@@ -1342,9 +1326,9 @@ defineExpose({
       <!-- 枚举列插槽 -->
       <template #_enum-cell="{ record, column }">
         {{
-          visibleColumns.find((c) => c.dataIndex === column.dataIndex)
-            ?.enumMap?.[record[column.dataIndex]]?.label ||
-          record[column.dataIndex]
+          visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.enumMap?.[
+            record[column.dataIndex]
+          ]?.label || record[column.dataIndex]
         }}
       </template>
 
@@ -1429,10 +1413,7 @@ defineExpose({
 
     <!-- 分页 -->
     <div v-if="config.paginationType !== 'none'" class="table-pagination">
-      <span
-        >共 {{ totalCount }} 条数据，已选择
-        {{ props.selectedKeys.length }} 条</span
-      >
+      <span>共 {{ totalCount }} 条数据，已选择 {{ props.selectedKeys.length }} 条</span>
       <a-pagination
         :current="state.currentPage"
         :page-size="state.pageSize"
@@ -1471,9 +1452,7 @@ defineExpose({
           style="flex: 1; max-width: 300px"
         />
         <a-space size="small">
-          <a-button type="secondary" @click="handleResetColumnConfig"
-            >配置还原</a-button
-          >
+          <a-button type="secondary" @click="handleResetColumnConfig">配置还原</a-button>
           <a-button type="secondary" @click="clearCache">缓存清空</a-button>
         </a-space>
       </div>
@@ -1498,9 +1477,7 @@ defineExpose({
           <div
             class="col-name"
             :class="{
-              'col-name-highlighted': state.highlightedColumns.has(
-                col.dataIndex
-              ),
+              'col-name-highlighted': state.highlightedColumns.has(col.dataIndex),
             }"
             :title="col.title"
           >
@@ -1557,9 +1534,7 @@ defineExpose({
     <!-- 多条记录选择弹窗 -->
     <a-modal
       :visible="state.viewListVisible"
-      :title="
-        state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'
-      "
+      :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
       @update:visible="(val) => (state.viewListVisible = val)"
       :ok-text="null"
       :cancel-text="null"
