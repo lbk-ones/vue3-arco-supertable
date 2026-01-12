@@ -1121,7 +1121,7 @@ defineExpose({
             class="search-item"
           >
             <!-- 搜索字段标签 -->
-            <span class="search-label">{{ field.title }}:</span>
+            <span class="search-label" v-if="!!field.title">{{ field.title }}:</span>
 
             <!-- 输入框搜索 -->
             <template v-if="!field.type || field.type === 'input'">
@@ -1732,9 +1732,10 @@ defineExpose({
 }
 
 .search-label {
-  font-size: 12px;
-  color: #666;
+  font-size: 14px;
+  color: #000;
   font-weight: 500;
+  margin-bottom: 5px;
 }
 
 .search-buttons {
