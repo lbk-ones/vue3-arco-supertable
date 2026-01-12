@@ -348,6 +348,14 @@ const handleResetColumnConfig = () => {
 
   Message.success("已重置为初始配置");
 };
+// 清除缓存
+const clearCache = () => {
+  const key = getStorageKey();
+  if (!props.config.enableLocalStorage || !isBrowser || !key) return;
+  localStorage.removeItem(key);
+  fetchData();
+  Message.success("缓存已清空");
+};
 
 // 统一更新列状态的辅助函数
 const updateStateColumns = (columns) => {
@@ -400,7 +408,8 @@ const initializeColumns = () => {
         const storedData = safeParse(localStorage.getItem(key));
         if (storedData) {
           // 优先加载 latestValue，其次 initialValue
-          const configToLoad = storedData.latestValue || storedData.initialValue;
+          const configToLoad =
+            storedData.latestValue || storedData.initialValue;
           if (configToLoad && Array.isArray(configToLoad)) {
             finalColumns = mergeConfig(finalColumns, configToLoad);
           }
@@ -442,6 +451,13 @@ const visibleColumns = computed(() => {
   );
 });
 
+// 表单列
+const formColumns = computed(() => {
+  return props?.config?.columns?.filter?.(
+    (col) => col?.form?.type === 'slot' && col?.form?.slotName
+  ) ?? [];
+});
+
 // 获取表格数据
 const tableData = computed(() => {
   if (props.config.paginationType === "backend") {
@@ -465,7 +481,9 @@ const getFilteredData = () => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
+        const searchField = props.config.searchFields.find(
+          (f) => f.dataIndex === field
+        );
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -473,7 +491,9 @@ const getFilteredData = () => {
         switch (fieldType) {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
-              const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+              const itemValue = Array.isArray(fieldValue)
+                ? fieldValue
+                : [fieldValue];
               return value.some((v) => itemValue.includes(v));
             }
             return true;
@@ -482,7 +502,9 @@ const getFilteredData = () => {
             if (Array.isArray(value) && value.length === 2) {
               const [startDate, endDate] = value;
               const itemDate = new Date(fieldValue);
-              return itemDate >= new Date(startDate) && itemDate <= new Date(endDate);
+              return (
+                itemDate >= new Date(startDate) && itemDate <= new Date(endDate)
+              );
             }
             return true;
 
@@ -547,7 +569,8 @@ const handleResetSearch = () => {
 
 // 获取后端数据
 const fetchData = async () => {
-  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl) return;
+  if (props.config.paginationType !== "backend" || !props.config.pageApiUrl)
+    return;
   let loading = false;
   try {
     let data = await props.config?.pageFetchData?.(
@@ -662,8 +685,19 @@ onUnmounted(() => {
 
 // 获取右键菜单可用的操作
 const contextMenuActions = computed(() => {
+  return (props.config.actions || [])
+    .filter((action) => action.showInContextMenu !== false)
+    .sort(
+      (a, b) =>
+        (a.contextMenuSortNo === void 0 ? 9999 : a.contextMenuSortNo) -
+        (b.contextMenuSortNo === void 0 ? 9999 : b.contextMenuSortNo)
+    );
+});
+
+// 过滤可见的操作按钮
+const visibleActions = computed(() => {
   return (props.config.actions || []).filter(
-    (action) => action.showInContextMenu !== false
+    (action) => action.visible !== false
   );
 });
 
@@ -673,15 +707,32 @@ const isNeedSelect = (action) => {
 };
 
 // 操作按钮点击（传递选中的行数组）
-const handleActionClick = (action) => {
+const handleActionClick = (action, record) => {
+  let needSelect = isNeedSelect(action);
   // 获取选中行对应的记录 - 从完整数据中查找
   const sourceData = props.data;
+  let selectedRecords = [];
+  if (record) {
+    selectedRecords = [record];
+  } else {
+    selectedRecords = props.selectedKeys
+      .map((key) => sourceData.find((item) => item[getKeyName()] === key))
+      .filter(Boolean);
+    if (needSelect) {
+      let disabledSelectedRecords = selectedRecords.filter((record) =>
+        isDisabled(action, record)
+      );
+      // 检查操作是否禁用
+      if (disabledSelectedRecords.length > 0) {
+        let keys = disabledSelectedRecords
+          .map((item) => item[getKeyName()])
+          .join(",");
+        Message.warning(`操作已禁用：${keys}`);
+        return;
+      }
+    }
+  }
 
-  const selectedRecords = props.selectedKeys
-    .map((key) => sourceData.find((item) => item[getKeyName()] === key))
-    .filter(Boolean);
-
-  let needSelect = isNeedSelect(action);
   if (selectedRecords.length === 0 && needSelect) {
     Message.warning("请先选择数据");
     return;
@@ -923,11 +974,11 @@ const formModalChangeVisible = (val) => {
 };
 
 // 检查字段是否禁用
-const isDisabled = (field) => {
+const isDisabled = (field, record) => {
   if (!field) return false;
   const disabled = field.disabled;
   if (typeof disabled === "function") {
-    return disabled(field);
+    return disabled(field, record);
   }
   return disabled === true;
 };
@@ -970,9 +1021,11 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span style="font-weight: 700; font-size: 1rem" v-if="!!config.cnDesc">{{
-          config.cnDesc || ""
-        }}</span>
+        <span
+          style="font-weight: 700; font-size: 1rem"
+          v-if="!!config.cnDesc"
+          >{{ config.cnDesc || "" }}</span
+        >
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
@@ -986,9 +1039,14 @@ defineExpose({
         </a-button>
 
         <!-- 操作按钮 -->
-        <a-button-group v-if="config.actions && config.actions.length > 0">
+        <a-button-group
+          v-if="
+            visibleActions.length > 0 &&
+            props.config.showTopLeftActions !== false
+          "
+        >
           <a-button
-            v-for="action in config.actions"
+            v-for="action in visibleActions"
             :key="action.key"
             :type="
               action.type === 'confirm'
@@ -999,8 +1057,9 @@ defineExpose({
             "
             :status="action.status"
             :disabled="
-              (props.selectedKeys.length === 0 || props.tableDisabled) &&
-              isNeedSelect(action)
+              ((props.selectedKeys.length === 0 || props.tableDisabled) &&
+                isNeedSelect(action)) ||
+              isDisabled(action)
             "
             :size="config.tableSize || 'small'"
             @click="handleActionClick(action)"
@@ -1028,7 +1087,9 @@ defineExpose({
         <!-- 搜索按钮 🔍 -->
         <a-button
           v-if="
-            config.searchFields && config.searchFields.length > 0 && !config.showSearchBar
+            config.searchFields &&
+            config.searchFields.length > 0 &&
+            !config.showSearchBar
           "
           type="outline"
           @click="state.visibleSearchBar = !state.visibleSearchBar"
@@ -1262,37 +1323,104 @@ defineExpose({
         '--header-font-color': config.headerFontColor || 'rgb(var(--gray-10))',
       }"
     >
-      <!-- 状态列插槽 -->
-      <template #status-cell="{ record, column }">
+      <!-- tag列插槽 -->
+      <template #_tag-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
-              record[column.dataIndex]
-            ]?.color || 'blue'
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+              ?.tagMap?.[record[column.dataIndex]]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.statusMap?.[
-              record[column.dataIndex]
-            ]?.label || record.status
+            visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+              ?.tagMap?.[record[column.dataIndex]]?.label ||
+            record[column.dataIndex]
           }}
         </a-tag>
       </template>
+
+      <!-- 枚举列插槽 -->
+      <template #_enum-cell="{ record, column }">
+        {{
+          visibleColumns.find((c) => c.dataIndex === column.dataIndex)
+            ?.enumMap?.[record[column.dataIndex]]?.label ||
+          record[column.dataIndex]
+        }}
+      </template>
+
       <!-- 序号列 -->
       <template #_rowIndex-cell="{ rowIndex }">
         <span>{{ rowIndex + 1 }}</span>
       </template>
+
+      <!-- 是否启用 -->
+      <template #isEnabled-cell="{ record, rowIndex }">
+        <a-tag
+          :key="record.isEnabled + rowIndex"
+          :color="record.isEnabled == 1 ? 'green' : 'red'"
+          >{{ record.isEnabled == 1 ? "启用" : "禁用" }}</a-tag
+        >
+      </template>
+
       <!-- 操作列 -->
       <template #operations-cell="{ record }" v-if="config.showForm">
         <a-button-group size="small">
+          <!-- 操作按钮 -->
           <a-button
-            type="text"
-            status="success"
-            :disabled="props.tableDisabled"
-            @click="openEditForm(record)"
-            >编辑</a-button
+            v-for="action in visibleActions.slice(
+              0,
+              props.config.lineLeftActionsNum === void 0
+                ? 2
+                : props.config.lineLeftActionsNum
+            )"
+            :key="action.key"
+            :type="
+              action.type === 'confirm'
+                ? 'outline'
+                : action.type
+                ? action.type
+                : 'secondary'
+            "
+            :status="action.status"
+            :disabled="props.tableDisabled || isDisabled(action, record)"
+            :size="config.tableSize || 'small'"
+            @click="handleActionClick(action, record)"
+            style="margin-right: 8px"
+            v-bind="action.attrs || {}"
+            v-on="action.attrs || {}"
           >
+            {{ action.label }}
+          </a-button>
         </a-button-group>
+
+        <a-dropdown
+          v-if="
+            visibleActions.slice(
+              props.config.lineLeftActionsNum === void 0
+                ? 2
+                : props.config.lineLeftActionsNum
+            ).length > 0
+          "
+          trigger="hover"
+          @select="(action) => handleActionClick(action, record)"
+        >
+          <a-button type="outline" :size="config.tableSize || 'small'"
+            ><icon-drag-dot-vertical
+          /></a-button>
+          <template #content>
+            <a-doption
+              v-for="action in visibleActions.slice(
+                props.config.lineLeftActionsNum === void 0
+                  ? 2
+                  : props.config.lineLeftActionsNum
+              )"
+              :disabled="props.tableDisabled || isDisabled(action, record)"
+              :key="action.key"
+              :value="action"
+              >{{ action.label }}</a-doption
+            >
+          </template>
+        </a-dropdown>
       </template>
     </a-table>
 
@@ -1301,7 +1429,10 @@ defineExpose({
 
     <!-- 分页 -->
     <div v-if="config.paginationType !== 'none'" class="table-pagination">
-      <span>共 {{ totalCount }} 条数据，已选择 {{ props.selectedKeys.length }} 条</span>
+      <span
+        >共 {{ totalCount }} 条数据，已选择
+        {{ props.selectedKeys.length }} 条</span
+      >
       <a-pagination
         :current="state.currentPage"
         :page-size="state.pageSize"
@@ -1339,7 +1470,12 @@ defineExpose({
           allow-clear
           style="flex: 1; max-width: 300px"
         />
-        <a-button type="secondary" @click="handleResetColumnConfig">配置还原</a-button>
+        <a-space size="small">
+          <a-button type="secondary" @click="handleResetColumnConfig"
+            >配置还原</a-button
+          >
+          <a-button type="secondary" @click="clearCache">缓存清空</a-button>
+        </a-space>
       </div>
 
       <div class="column-config-grid">
@@ -1362,7 +1498,9 @@ defineExpose({
           <div
             class="col-name"
             :class="{
-              'col-name-highlighted': state.highlightedColumns.has(col.dataIndex),
+              'col-name-highlighted': state.highlightedColumns.has(
+                col.dataIndex
+              ),
             }"
             :title="col.title"
           >
@@ -1419,7 +1557,9 @@ defineExpose({
     <!-- 多条记录选择弹窗 -->
     <a-modal
       :visible="state.viewListVisible"
-      :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
+      :title="
+        state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'
+      "
       @update:visible="(val) => (state.viewListVisible = val)"
       :ok-text="null"
       :cancel-text="null"
@@ -1478,7 +1618,7 @@ defineExpose({
       @submit="handleFormSubmit"
       @success="handleFormSuccess"
     >
-      <template v-for="fm in visibleColumns" #[fm?.form?.slotName]="slotProps">
+      <template v-for="fm in formColumns" #[fm?.form?.slotName]="slotProps">
         <slot
           :name="fm?.form?.slotName"
           v-bind="slotProps"
@@ -1576,7 +1716,7 @@ defineExpose({
 
 .search-bar-expanded {
   padding: 12px;
-  background: #fafafa;
+  background: #fff;
   border: 1px solid #f0f0f0;
   border-radius: 4px;
   animation: slideDown 0.3s ease-out;

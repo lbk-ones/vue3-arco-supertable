@@ -22,6 +22,7 @@ const tableData = ref([
     joinDate: "2022-01-15",
     orderDetails: [],
     enable: "false",
+    isEnabled: "1",
   },
   {
     id: "2",
@@ -33,6 +34,7 @@ const tableData = ref([
     joinDate: "2021-06-20",
     orderDetails: [],
     enable: true,
+    isEnabled: 1,
   },
   {
     id: "3",
@@ -44,6 +46,7 @@ const tableData = ref([
     joinDate: "2022-03-10",
     orderDetails: [],
     enable: true,
+    isEnabled: 0,
   },
   {
     id: "4",
@@ -227,6 +230,16 @@ const tableConfig = reactive({
       },
     },
     {
+      title: "是否启用2",
+      dataIndex: "isEnabled",
+      width: 100,
+      visible: true,
+      align: "left",
+      sortable: {
+        compare: (a, b) => a - b,
+      },
+    },
+    {
       title: "邮箱",
       dataIndex: "email",
       width: 160,
@@ -331,7 +344,7 @@ const tableConfig = reactive({
     {
       title: "备注",
       dataIndex: "remark",
-      // width: 160,
+      width: 160,
       visible: true,
       ellipsis: true,
       sortable: {
@@ -479,6 +492,14 @@ const tableConfig = reactive({
         },
       },
     },
+    {
+      title: "操作",
+      dataIndex: "operations",
+      width:220,
+      // fixed: "right",
+      visible: true,
+      ellipsis: true,
+    },
   ],
 
   // 搜索字段配置
@@ -555,23 +576,6 @@ const tableConfig = reactive({
     },
   ],
 
-  // 分页类型：frontend（前端分页）或 backend（后端分页）
-  paginationType: "frontend",
-  pageSize: 10,
-  pageSizeOptions: [5, 10, 20, 50],
-
-  // 后端分页配置（如果使用后端分页）
-  pageApiUrl: "/pd/employees/pageQueryEmployees",
-
-  // 后端表单新增接口地址
-  formAddApiUrl: "/pd/employees/saveEmployees",
-
-  // 后端表单更新的接口地址
-  formUpdateApiUrl: "/pd/employees/updateEmployees",
-
-  // 后端表格删除接口
-  formDeleteApiUrl: "/pd/employees/deleteEmployees",
-
   // 操作按钮配置
   actions: [
     {
@@ -580,6 +584,7 @@ const tableConfig = reactive({
       icon: "eye",
       message: "查看成功",
       type: "outline",
+      disabled: (field,record) => record && record.id == 1,
       // 查看操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
     {
@@ -601,6 +606,17 @@ const tableConfig = reactive({
       attrs: null, // 透传属性或者事件可以写到一起
     },
     {
+      key: "enabled",
+      label: "启用/禁用",
+      visible: false,
+      icon: "edit",
+      type: "outline",
+      needSelect: true,
+      isFetchData: true,
+      contextMenuSortNo: -1, // 右键菜单中显示的顺序
+      // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
+    },
+    {
       key: "other",
       label: "其他",
       icon: "edit",
@@ -610,6 +626,28 @@ const tableConfig = reactive({
       // 编辑操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
   ],
+  // 是否显示顶部左侧操作按钮
+  showTopLeftActions: true,
+
+  // 如果配置了dataIndex名为operations的操作列，每行左侧操作按钮数量，操过两个将转为更多
+  lineLeftActionsNum: 2,
+
+  // 分页类型：frontend（前端分页）或 backend（后端分页）
+  paginationType: "frontend",
+  pageSize: 10,
+  pageSizeOptions: [5, 10, 20, 50],
+
+  // 后端分页配置（如果使用后端分页）
+  pageApiUrl: "/pd/employees/pageQueryEmployees",
+
+  // 后端表单新增接口地址
+  formAddApiUrl: "/pd/employees/saveEmployees",
+
+  // 后端表单更新的接口地址
+  formUpdateApiUrl: "/pd/employees/updateEmployees",
+
+  // 后端表格删除接口
+  formDeleteApiUrl: "/pd/employees/deleteEmployees",
 
   // 是否显示列配置按钮
   showColumnConfig: true,
@@ -633,7 +671,7 @@ const tableConfig = reactive({
   formColumns: 4,
 
   // 表格滚动配置
-  scroll: { x: 1200, y: "auto" },
+  scroll: { x: "100%", y: "auto" },
 
   // 是否显示选择列
   selection: true,
@@ -786,7 +824,8 @@ const tableConfig = reactive({
       console.log("编辑数据:", data);
       if (config.paginationType === "frontend") {
         const index = tableData.value.findIndex(
-          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+          (item) =>
+            item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
         );
         if (index !== -1) {
           tableData.value[index] = {
@@ -834,7 +873,8 @@ const showConfig = ref(false);
 const paginationType = ref("frontend");
 
 const switchPaginationType = () => {
-  paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
+  paginationType.value =
+    paginationType.value === "frontend" ? "backend" : "frontend";
   tableConfig.paginationType = paginationType.value;
   if (tableConfig.paginationType === "backend") {
     // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
@@ -849,7 +889,9 @@ const switchPaginationType = () => {
   } else {
     window.location.reload();
   }
-  Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
+  Message.info(
+    `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
+  );
 };
 const inputNum = ref(0);
 const textareaValue = computed(() => {
@@ -857,7 +899,9 @@ const textareaValue = computed(() => {
 });
 const handleAddPhone = () => {
   let index = tableConfig.columns.findIndex((it) => {
-    return it.dataIndex === "phone" + (inputNum.value == 0 ? "" : inputNum.value);
+    return (
+      it.dataIndex === "phone" + (inputNum.value == 0 ? "" : inputNum.value)
+    );
   });
   inputNum.value++;
   tableConfig.columns.splice(index + 1, 0, {
@@ -883,14 +927,22 @@ const handleAddPhone = () => {
     <a-col :span="16">
       <div class="example-container">
         <h1
-          style="display: flex; align-items: center; justify-content: center; gap: 10px"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+          "
         >
           基于Arco的超级表格组件示例
           <a-button type="outline" size="large" @click="switchPaginationType"
             >切换分页模式（当前：{{ paginationType }}）</a-button
           >
 
-          <a-button type="outline" size="large" @click="() => (showConfig = true)"
+          <a-button
+            type="outline"
+            size="large"
+            @click="() => (showConfig = true)"
             >配置编辑</a-button
           >
         </h1>
@@ -915,7 +967,14 @@ const handleAddPhone = () => {
           </template> -->
 
           <template
-            #phone-input="{ domRef, field, formData, disabled, attrs, handleEnter }"
+            #phone-input="{
+              domRef,
+              field,
+              formData,
+              disabled,
+              attrs,
+              handleEnter,
+            }"
           >
             <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
             <a-space :size="8">
@@ -932,7 +991,9 @@ const handleAddPhone = () => {
           </template>
 
           <!-- 其实预留了这个组件的 这里只是做个测试而已 -->
-          <template #enable-switch="{ field, formData, disabled, attrs, handleUpdate }">
+          <template
+            #enable-switch="{ field, formData, disabled, attrs, handleUpdate }"
+          >
             <a-space :size="8">
               <a-switch
                 :model-value="formData[field.dataIndex]"

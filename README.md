@@ -145,6 +145,8 @@
 | `contextMenuEnabled` | `Boolean` | `true` | 是否启用表格行右键菜单功能 |
 | `showSearchBar` | `Boolean` | `false` | 是否直接显示搜索条件,true代表直接显示搜索条件（移除掉搜索按钮和关闭按钮）,false代表点击搜索按钮才显示 |
 | `tableDisabled` | `Boolean` | `false` | 是否禁用表格操作（禁用所有操作按钮） |
+| `showTopLeftActions` | `Boolean` | `true` | 是否显示顶部左侧操作按钮 |
+| `lineLeftActionsNum` | `Number` | `2` | 如果配置了dataIndex名为operations的操作列，每行左侧操作按钮数量，操过两个将转为更多 |
 ### 2.2 表单与弹窗配置 (Form & Modal)
 
 | 参数 | 类型 | 默认值 | 说明 |
@@ -285,6 +287,7 @@ columns: [
 | `slotName` | `String` | - | 自定义搜索插槽名（当 `type` 为 `'slot'` 时必填） |
 | `placeholder` | `String` | - | 占位符 |
 | `attrs` | `Object` | `{}` | 透传给 Arco 组件的属性或事件 |
+| `condition` | `String` | `eq` | 搜索条件 `eq,ne,in,gt,gte,lt,lte,like,notLike,likeLeft,likeRight,between,betweene,tgt,tge,tlt,tle` |
 | `options` | `Array \| Function` | - | 选项数组（用于 `select`, `radio`, `checkbox`） |
 
 ### 示例
@@ -297,6 +300,7 @@ searchFields: [
     type: 'input',          // 类型：'input', 'select', 'date', 'date-range', 'number', 'slot'
     slotName: 'name-search',// 自定义搜索插槽名（可选）当type==='slot' 的时候必填 
     placeholder: '搜索姓名',
+    condition: 'eq', // 搜索条件 eq,ne,in,gt,gte,lt,lte,like,notLike,likeLeft,likeRight,between,betweene,tgt,tge,tlt,tle
     // 透传给 Arco 组件的属性或者事件
     attrs: {},
     // 只有type === 'select' 或 'radio' 或 'checkbox' 时才生效 可以是函数返回数组
@@ -325,6 +329,9 @@ searchFields: [
 | `needSelect` | `Boolean` | `true` | 是否需要选中行才能操作 |
 | `isClearSelect` | `Boolean` | `true` | 操作完成后是否清除选中状态 |
 | `apiUrl` | `String` | - | 接口地址（仅在回调中使用） |
+| `showInContextMenu` | `Boolean` | `true` | 是否在右键菜单中显示 |
+| `contextMenuSortNo` | `Number` | `1` | 右键菜单中显示的顺序 |
+| `visible` | `Boolean` | `true` | 是否可见 |
 | `params` | `Function` | - | 参数处理函数 `(records) => object` |
 | `attrs` | `Object` | `{}` | 透传给 Arco 组件的属性或事件 |
 
@@ -343,6 +350,9 @@ actions: [
     isFetchData: true, // 执行完之后是否刷新数据表格 默认是true
     needSelect:true,// 是否需要选择数据默认为true,为false则不会校验是否选择了数据
     isClearSelect: true, // 需要选择行的时候，执行完之后是否清除选择的行 默认是true
+    visible: true, // 是否可见 默认是true
+    showInContextMenu: true, // 是否在右键菜单中显示
+    contextMenuSortNo:1, // 右键菜单中显示的顺序
     // 点击后触发 executeAction 回调
     apiUrl:'',// 这个操作的接口地址只是在executeAction 回调中使用，不会自动调用
     params: (records)=>{}, // params 处理方法 第一个参数是选中行数据必须返回一个对象，返回对象会在executeAction 回调中作为参数
@@ -356,6 +366,16 @@ actions: [
 ## 3. 插槽使用指南
 
 ### 3.1 单元格插槽 (Table Cell)
+
+#### 3.1.1 预留单元格插槽
+
+| slotName名称 | 说明 |
+| :--- | :--- |
+| `_tag-cell` | tag显示，需要在column中提供tagMap格式为{"1":{color:'red',label:'禁用'},"0":{color:'green',label:'启用'}} |
+| `_enum-cell` | 枚举显示，需要在column中提供enumMap格式为{"1":{label:'启用'},"0":{label:'禁用'}} |
+| `_rowIndex-cell` | 序号列 |
+| `isEnabled-cell` | 启用状态,dataIndex如果为isEnabled会自动开启，值为0或者1 字符串和数字都可以 |
+| `operations-cell` | 操作列 |
 
 在 `columns` 中指定 `slotName`，自定义单元格渲染。
 
