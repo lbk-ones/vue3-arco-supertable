@@ -1011,7 +1011,7 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span style="font-weight: 700; font-size: 1rem" v-if="!!config.cnDesc">{{
+        <span style="font-weight: 700; font-size: 1rem; color:#000" v-if="!!config.cnDesc">{{
           config.cnDesc || ""
         }}</span>
         <!-- 新增按钮 -->
