@@ -986,6 +986,18 @@ const getPrepend = (field) => {
     return "";
   }
 };
+const columnMapTransfer = (column,fieldName) => {
+  let find = props?.config?.columns?.find((c) => c.dataIndex === column.dataIndex);
+  let columnElement = find?.[fieldName] ?? null;
+  if(columnElement){
+    if(typeof columnElement === 'function'){
+      return columnElement(column);
+    }else{
+      return columnElement;
+    }
+  }
+  return {};
+}
 defineExpose({
   fetchData,
   closeForm: () => tableFormRef.value?.closeForm?.(),
@@ -1310,13 +1322,13 @@ defineExpose({
       <template #_tag-cell="{ record, column }">
         <a-tag
           :color="
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.tagMap?.[
+            columnMapTransfer(column,'tagMap')?.[
               record[column.dataIndex]
             ]?.color || 'blue'
           "
         >
           {{
-            visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.tagMap?.[
+            columnMapTransfer(column,'tagMap')?.[
               record[column.dataIndex]
             ]?.label || record[column.dataIndex]
           }}
@@ -1326,7 +1338,7 @@ defineExpose({
       <!-- 枚举列插槽 -->
       <template #_enum-cell="{ record, column }">
         {{
-          visibleColumns.find((c) => c.dataIndex === column.dataIndex)?.enumMap?.[
+          columnMapTransfer(column,'enumMap')?.[
             record[column.dataIndex]
           ]?.label || record[column.dataIndex]
         }}
@@ -1337,7 +1349,7 @@ defineExpose({
         <span>{{ rowIndex + 1 }}</span>
       </template>
 
-      <!-- 是否启用 -->
+      <!-- 是否启用 必须是 == 不能 === -->
       <template #isEnabled-cell="{ record, rowIndex }">
         <a-tag
           :key="record.isEnabled + rowIndex"

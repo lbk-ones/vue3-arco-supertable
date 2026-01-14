@@ -263,11 +263,11 @@ const tableConfig = reactive({
       width: 200,
       visible: true,
       //type: "status",
-      slotName: "status-cell", // 预留插槽 写死
-      statusMap: {
+      slotName: "_enum-cell", // 预留插槽 写死
+      enumMap: ()=>({
         active: { label: "在职", color: "green" },
         inactive: { label: "离职", color: "red" },
-      },
+      }),
       form: {
         type: "radio",
         creatable: true,
