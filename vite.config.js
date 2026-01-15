@@ -18,9 +18,9 @@ export default defineConfig({
     targets: [
       {
         // 1. 源文件/目录路径
-        src: 'src/types/*', // 使用通配符 * 匹配 src/assets 下的所有文件
+        src: 'src/types/index.d.ts', // 使用通配符 * 匹配 src/assets 下的所有文件
         // 2. 目标路径，相对于 'dist' 目录
-        dest: 'types' // 复制到 dist/assets 目录
+        dest: 'types' // 复制到 dist/ 目录
       }
     ]
   })],
