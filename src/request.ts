@@ -1,37 +1,34 @@
-import axios from "axios";
+import axios, { type AxiosInstance, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 import { Message } from "@arco-design/web-vue";
+
+// Extend AxiosRequestConfig to support custom properties like skipLoading
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  skipLoading?: boolean;
+  loadingText?: string;
+}
+
+interface RequestConfig extends AxiosRequestConfig {
+  skipLoading?: boolean;
+  loadingText?: string;
+}
 
 /**
  * 全部以 application/x-www-form-urlencoded 传参
  * @type {axios.AxiosInstance}
  */
-const instance = axios.create({
+const instance: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 60000,
-  // 全局设置请求头
   // headers: {
   //     'Content-Type': 'application/x-www-form-urlencoded'
   // },
-  // // 全局自动转换 JS 对象为键值对字符串
-  // transformRequest: [(data) => {
-  //     // 排除 FormData/URLSearchParams/非对象数据（避免覆盖其他请求格式）
-  //     if (data instanceof FormData || data instanceof URLSearchParams || typeof data !== 'object') {
-  //         return data;
-  //     }
-  //     const validEntries = Object.entries(data).filter(([key, value]) => {
-  //         // 保留条件：值不为 null、undefined、空字符串
-  //         return value !== null && value !== undefined && value !== '';
-  //     });
-  //     // 序列化 JS 对象为键值对字符串
-  //     return new URLSearchParams(validEntries).toString();
-  // }]
 });
 
 // 请求计数器：处理并发请求，避免重复显示/提前隐藏 Loading
 let requestCount = 0;
 
 // 显示 Loading（封装，方便扩展）
-const showLoading = (config) => {
+const showLoading = (config: CustomAxiosRequestConfig | RequestConfig) => {
   // 若配置 skipLoading: true，则跳过显示
   if (config?.skipLoading) return;
   // 只有第一个请求时才显示 Loading
@@ -42,7 +39,7 @@ const showLoading = (config) => {
 };
 
 // 隐藏 Loading（封装）
-const hideLoading = (config) => {
+const hideLoading = (config: CustomAxiosRequestConfig | RequestConfig | undefined) => {
   if (config?.skipLoading) return;
   requestCount--;
   // 所有请求完成后才隐藏 Loading
@@ -56,7 +53,7 @@ const hideLoading = (config) => {
 instance.interceptors.request.use(
   function (config) {
     // Do something before request is sent
-    showLoading(config);
+    showLoading(config as CustomAxiosRequestConfig);
     return config;
   },
   function (error) {
@@ -72,9 +69,9 @@ instance.interceptors.response.use(
     // data 为后端返回的数据
     const { config, data } = response;
     // 隐藏 Loading
-    hideLoading(config);
+    hideLoading(config as CustomAxiosRequestConfig);
     if (data.code !== "0") {
-      let newVar = data?.Message || "请求失败";
+      const newVar = data?.Message || "请求失败";
       Message.error(newVar);
       console.error(newVar); // 示例：结合 Element Plus 提示
       return Promise.reject(newVar);
@@ -122,11 +119,11 @@ instance.interceptors.response.use(
       }
     } else {
       // 2. 无响应（网络错误/超时/取消请求）
-      if (error.Message.includes("timeout")) {
+      if (error.message && error.message.includes("timeout")) {
         errMsg = "请求超时，请检查网络";
       } else if (axios.isCancel(error)) {
         errMsg = "请求已取消";
-        console.log(errMsg, error.Message);
+        console.log(errMsg, error.message);
         return Promise.reject(error); // 取消请求不提示
       } else {
         errMsg = "网络异常，请检查网络连接";
@@ -141,24 +138,12 @@ instance.interceptors.response.use(
   }
 );
 
-export function post(url, data, config={}) {
+export function post<T = any>(url: string, data?: any, config: RequestConfig = {}): Promise<T> {
   return new Promise((resolve, reject) => {
     instance
       .post(url, data, config)
       .then((res) => {
-        resolve(res.data);
-      })
-      .catch((e) => {
-        reject(e);
-      });
-  });
-}
-export function put(url, data, config={}) {
-  return new Promise((resolve, reject) => {
-    instance
-      .put(url, data, config)
-      .then((res) => {
-        resolve(res.data);
+        resolve(res as unknown as T);
       })
       .catch((e) => {
         reject(e);
@@ -166,7 +151,20 @@ export function put(url, data, config={}) {
   });
 }
 
-export function get(url, params=null, config = {}) {
+export function put<T = any>(url: string, data?: any, config: RequestConfig = {}): Promise<T> {
+  return new Promise((resolve, reject) => {
+    instance
+      .put(url, data, config)
+      .then((res) => {
+        resolve(res as unknown as T);
+      })
+      .catch((e) => {
+        reject(e);
+      });
+  });
+}
+
+export function get<T = any>(url: string, params: any = null, config: RequestConfig = {}): Promise<T> {
   return new Promise((resolve, reject) => {
     instance
       .get(url, {
@@ -174,7 +172,7 @@ export function get(url, params=null, config = {}) {
         params: params,
       })
       .then((res) => {
-        resolve(res.data);
+        resolve(res as unknown as T);
       })
       .catch((e) => {
         reject(e);
@@ -182,7 +180,7 @@ export function get(url, params=null, config = {}) {
   });
 }
 
-export function del(url, params=null, config = {}) {
+export function del<T = any>(url: string, params: any = null, config: RequestConfig = {}): Promise<T> {
   return new Promise((resolve, reject) => {
     instance
       .delete(url, {
@@ -190,7 +188,7 @@ export function del(url, params=null, config = {}) {
         params: params,
       })
       .then((res) => {
-        resolve(res.data);
+        resolve(res as unknown as T);
       })
       .catch((e) => {
         reject(e);

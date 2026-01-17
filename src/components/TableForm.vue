@@ -1,18 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import TableFormFieldItem from "./TableFormFieldItem.vue";
-import { reactive, ref, computed, onMounted, watch, nextTick, toRaw,onBeforeUpdate } from "vue";
-import { Message, Modal } from "@arco-design/web-vue";
+import { reactive, computed, onMounted, watch, nextTick, toRaw, type PropType } from "vue";
+import { Message } from "@arco-design/web-vue";
+import type { TableColumn, TableConfig, SearchOption } from "@/types";
 
 // Props 定义
 const props = defineProps({
   // 列配置（来自 Table 组件）
   columns: {
-    type: Array,
+    type: Array as PropType<TableColumn[]>,
     required: true,
   },
   // 编辑的数据记录（如果是修改模式）
   record: {
-    type: Object,
+    type: Object as PropType<any>,
     default: null,
   },
   // 是否显示弹窗
@@ -22,20 +23,20 @@ const props = defineProps({
   },
   // 模式：'create'、'edit' 或 'readonly'
   mode: {
-    type: String,
+    type: String as PropType<"create" | "edit" | "readonly">,
     default: "create",
-    validator: (value) => ["create", "edit", "readonly"].includes(value),
+    validator: (value: string) => ["create", "edit", "readonly"].includes(value),
   },
   // 提交 API 配置
   apiConfig: {
-    type: Object,
+    type: Object as PropType<any>,
     default: () => ({}),
   },
   // 表单布局：'vertical' 或 'horizontal'
   formLayout: {
-    type: String,
+    type: String as PropType<"vertical" | "horizontal" | "inline">,
     default: "vertical",
-    validator: (value) => ["vertical", "horizontal"].includes(value),
+    validator: (value: string) => ["vertical", "horizontal", "inline"].includes(value),
   },
   // 表单列数（用于行布局时的列数）
   formColumns: {
@@ -54,17 +55,17 @@ const props = defineProps({
   },
   // 弹窗宽度
   modalWidth: {
-    type: Number,
+    type: [Number, String] as PropType<number | string>,
     default: 800,
   },
   // 选中的行 key 数组（用于表格类型字段的行选择）
   selectedKeys: {
-    type: Array,
+    type: Array as PropType<any[]>,
     default: () => [],
   },
   // 最顶层表格传入的配置对象config
   config: {
-    type: Object,
+    type: Object as PropType<TableConfig>,
     default: () => ({}),
   },
 });
@@ -79,11 +80,11 @@ const emit = defineEmits([
 ]);
 // 表单状态
 const state = reactive({
-  formData: {}, // 表单数据
+  formData: {} as Record<string, any>, // 表单数据
   formLoading: false, // 提交中
-  formErrors: {}, // 表单错误
-  refMap: {}, // 每一个表单的 ref引用
-  fieldRefMap: {}, // 字段组件的ref引用，用于focus
+  formErrors: {} as Record<string, string>, // 表单错误
+  refMap: {} as Record<string, any>, // 每一个表单的 ref引用
+  fieldRefMap: {} as Record<string, any>, // 字段组件的ref引用，用于focus
 });
 
 // 获取可见的表单字段（有 form 配置的字段）
@@ -95,6 +96,7 @@ const formFields = computed(() => {
 const availableFields = computed(() => {
   return formFields.value.filter((field) => {
     const formConfig = field.form;
+    if (!formConfig) return false;
 
     if (props.mode === "readonly") {
       // 只读模式显示所有有form配置的字段
@@ -108,7 +110,7 @@ const availableFields = computed(() => {
 });
 
 // 处理回车聚焦到下一个字段
-const handleEnterNext = (nextFieldIndex) => {
+const handleEnterNext = (nextFieldIndex: string) => {
   // 延迟执行，确保DOM已更新
   nextTick(() => {
     // 尝试从字段ref中获取焦点目标元素
@@ -139,6 +141,7 @@ const initializeFormData = () => {
     // 新增模式：初始化空值
     availableFields.value.forEach((field) => {
       const formConfig = field.form;
+      if (!formConfig) return;
       formConfig.type === "table"
         ? (state.formData[field.dataIndex] = [])
         : (state.formData[field.dataIndex] = formConfig.defaultValue ?? null);
@@ -147,13 +150,14 @@ const initializeFormData = () => {
 };
 
 // 检查字段是否禁用
-const isFieldDisabled = (field) => {
+const isFieldDisabled = (field: TableColumn) => {
   // 只读模式下所有字段都禁用
   if (props.mode === "readonly") {
     return true;
   }
 
   const formConfig = field.form;
+  if (!formConfig) return false;
   const disabled = formConfig.disabled;
 
   if (typeof disabled === "function") {
@@ -163,19 +167,21 @@ const isFieldDisabled = (field) => {
 };
 
 // 获取下拉选项
-const getOptions = (field) => {
+const getOptions = (field: TableColumn): SearchOption[] => {
   const formConfig = field.form;
+  if (!formConfig) return [];
   let options = formConfig.options;
 
   if (typeof options === "function") {
     return options(state.formData, field);
   }
-  return options || [];
+  return (options as SearchOption[]) || [];
 };
 
 // 获取表单控件的属性
-const getFieldAttrs = (field) => {
+const getFieldAttrs = (field: TableColumn) => {
   const formConfig = field.form;
+  if (!formConfig) return {};
   return {
     ...formConfig.attrs,
     placeholder:
@@ -189,7 +195,7 @@ const getFieldAttrs = (field) => {
  * @param {*} value - 需要检查的值。
  * @returns {boolean} - 如果值为空，则返回 true；否则返回 false。
  */
-function isEmpty(value) {
+function isEmpty(value: any) {
   // 1. 处理 null 和 undefined
   if (value === null || value === undefined) {
     return true;
@@ -240,6 +246,7 @@ const validateForm = () => {
 
   availableFields.value.forEach((field) => {
     const formConfig = field.form;
+    if (!formConfig) return;
     const value = state.formData[field.dataIndex];
 
     // 必填验证
@@ -250,7 +257,7 @@ const validateForm = () => {
 
     // 自定义验证
     if (formConfig.validator) {
-      const error = formConfig.validator(value, field, props.mode);
+      const error = formConfig.validator(value); // Assuming validator signature is (value) => string
       if (error) {
         state.formErrors[field.dataIndex] = error;
         isValid = false;
@@ -269,7 +276,7 @@ const onOkBefore = () => {
   }
 
   if (!validateForm()) {
-    let errors = [];
+    let errors: string[] = [];
     Object.keys(state.formErrors).forEach((key) => {
       errors.push(state.formErrors[key]);
     });
@@ -303,14 +310,13 @@ const handleSubmit = () => {
 
     // 模拟 API 调用（可由父组件自定义）
     if (props.apiConfig.url) {
-      const method = props.mode === "create" ? "POST" : "PUT";
       // 这里应该由父组件通过事件处理 API 调用
       Message.success(props.mode === "create" ? "新增成功" : "修改成功");
 
       emit("success", submitData);
       handleCancel();
     }
-  } catch (error) {
+  } catch (error: any) {
     Message.error(error.message || "提交失败");
     emit("error", error);
   } finally {
@@ -362,7 +368,7 @@ watch(
           return false;
         }) ?? null;
       if (fitem && fitem.dataIndex) {
-        if (!["select", "date", "time", "datetime"].includes(fitem?.form?.type)) {
+        if (fitem.form?.type && !["select", "date", "time", "datetime"].includes(fitem.form.type)) {
           handleEnterNext(fitem.dataIndex);
         }
       }
@@ -392,7 +398,7 @@ defineExpose({
     @ok="handleSubmit"
     :on-before-ok="onOkBefore"
     @cancel="handleCancel"
-    :ok-loading="formLoading"
+    :ok-loading="state.formLoading"
     :width="modalWidth"
     :hide-cancel="mode === 'readonly'"
   >
@@ -414,7 +420,7 @@ defineExpose({
           v-for="field in availableFields"
           :key="field.dataIndex"
           :span="
-            field.form.type === 'table' || field.form?.oneRow === true
+            field.form!.type === 'table' || field.form?.oneRow === true
               ? formColumns
               : (field.form?.columns ?? 0) > 0 &&
                 (field.form?.columns ?? 0) <= formColumns
@@ -426,7 +432,7 @@ defineExpose({
           <!-- 表单字段渲染（共用组件） -->
           <table-form-field-item
             :ref="
-              (re) => {
+              (re: any) => {
                 if (field?.form?.type === 'table') {
                   state.refMap[field.dataIndex] = re;
                 } else {
@@ -441,15 +447,15 @@ defineExpose({
             :get-options="getOptions"
             :get-field-attrs="getFieldAttrs"
             :model-value="state.formData[field.dataIndex]"
-            @update:model-value="(val) => (state.formData[field.dataIndex] = val)"
+            @update:model-value="(val: any) => (state.formData[field.dataIndex] = val)"
             :selectedKeys="props.selectedKeys"
-            @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
+            @update:selectedKeys="(val: any) => emit('update:selectedKeys', val)"
             :all-fields="availableFields"
             :on-enter-next="handleEnterNext"
             :supportEnterTypes="supportEnterTypes"
           >
-            <template #[field.form.slotName]="slotProps">
-              <slot :name="field.form.slotName" v-bind="slotProps"></slot>
+            <template #[field.form!.slotName]="slotProps" v-if="field.form?.slotName">
+              <slot :name="field.form!.slotName" v-bind="slotProps"></slot>
             </template>
           </table-form-field-item>
         </a-grid-item>
@@ -469,7 +475,7 @@ defineExpose({
         <!-- selectedKeys 父级选中的行 -->
         <table-form-field-item
           :ref="
-            (re) => {
+            (re: any) => {
               if (field?.form?.type === 'table') {
                 state.refMap[field.dataIndex] = re;
               } else {
@@ -484,15 +490,15 @@ defineExpose({
           :get-options="getOptions"
           :get-field-attrs="getFieldAttrs"
           :model-value="state.formData[field.dataIndex]"
-          @update:model-value="(val) => (state.formData[field.dataIndex] = val)"
+          @update:model-value="(val: any) => (state.formData[field.dataIndex] = val)"
           :selectedKeys="props.selectedKeys"
-          @update:selectedKeys="(val) => emit('update:selectedKeys', val)"
+          @update:selectedKeys="(val: any) => emit('update:selectedKeys', val)"
           :all-fields="availableFields"
           :on-enter-next="handleEnterNext"
           :supportEnterTypes="supportEnterTypes"
         >
-          <template #[field.form.slotName]="slotProps">
-            <slot :name="field.form.slotName" v-bind="slotProps"></slot>
+          <template #[field.form!.slotName]="slotProps" v-if="field.form?.slotName">
+            <slot :name="field.form!.slotName" v-bind="slotProps"></slot>
           </template>
         </table-form-field-item>
       </template>

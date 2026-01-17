@@ -31,11 +31,7 @@
 
     <!-- 配置列表 -->
     <div class="config-grid">
-      <div
-        v-for="(value, key) in filteredConfig"
-        :key="key"
-        class="config-item"
-      >
+      <div v-for="(value, key) in filteredConfig" :key="key" class="config-item">
         <div class="config-key" :title="key">{{ key }}</div>
         <div class="config-value" :title="formatValue(value)">
           {{ formatValue(value) }}
@@ -50,9 +46,10 @@
   </a-modal>
 </template>
 
-<script setup>
-import { computed } from "vue";
+<script setup lang="ts">
+import { computed, type PropType } from "vue";
 import pkg from "../../package.json";
+import type { TableConfig } from '@/types';
 
 const { version } = pkg;
 
@@ -62,7 +59,7 @@ const props = defineProps({
     default: false,
   },
   config: {
-    type: Object,
+    type: Object as PropType<TableConfig>,
     default: () => ({}),
   },
 });
@@ -87,18 +84,18 @@ const excludedKeys = [
 ];
 
 const filteredConfig = computed(() => {
-  const result = {};
+  const result: Record<string, any> = {};
   if (!props.config) return result;
 
   Object.keys(props.config).forEach((key) => {
     if (!excludedKeys.includes(key)) {
-      result[key] = props.config[key];
+      result[key] = (props.config as any)[key];
     }
   });
   return result;
 });
 
-const handleVisibleChange = (val) => {
+const handleVisibleChange = (val: boolean) => {
   emit("update:visible", val);
 };
 
@@ -106,7 +103,7 @@ const close = () => {
   emit("update:visible", false);
 };
 
-const formatValue = (val) => {
+const formatValue = (val: any) => {
   if (val === null) return "null";
   if (val === undefined) return "undefined";
   if (typeof val === "boolean") return val ? "true" : "false";

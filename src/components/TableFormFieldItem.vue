@@ -1,65 +1,67 @@
-<script setup>
+<script setup lang="ts">
 import SuperTable from "./Table.vue";
-import { onMounted, reactive, ref, watch, onBeforeUpdate } from "vue";
+import { onMounted, reactive, ref, type PropType } from "vue";
+import type { TableColumn, TableConfig, SearchOption } from '@/types';
+
 // Props 定义
 const props = defineProps({
   // 字段配置
   field: {
-    type: Object,
+    type: Object as PropType<TableColumn>,
     required: true,
   },
   // 表单数据
   formData: {
-    type: Object,
+    type: Object as PropType<any>,
     required: true,
   },
   // 表单错误
   formErrors: {
-    type: Object,
+    type: Object as PropType<any>,
     required: true,
   },
   // 是否禁用字段的方法
   isFieldDisabled: {
-    type: Function,
+    type: Function as PropType<(field: TableColumn) => boolean>,
     required: true,
   },
   // 获取选项的方法
   getOptions: {
-    type: Function,
+    type: Function as PropType<(field: TableColumn) => SearchOption[]>,
     required: true,
   },
   // 获取字段属性的方法
   getFieldAttrs: {
-    type: Function,
+    type: Function as PropType<(field: TableColumn) => any>,
     required: true,
   },
   // 字段值更新回调
   modelValue: {
-    type: [String, Number, Boolean, Array, Object, Date],
+    type: [String, Number, Boolean, Array, Object, Date] as PropType<any>,
     default: null,
   },
   // 这个是父组件传过来的表格选中的行key，这里其实并没有用到
   selectedKeys: {
-    type: Array,
+    type: Array as PropType<any[]>,
     default: () => [],
   },
   // 所有表单字段列表（用于enterNext功能）
   allFields: {
-    type: Array,
+    type: Array as PropType<TableColumn[]>,
     default: () => [],
   },
   // 回车聚焦下一个字段的回调
   onEnterNext: {
-    type: Function,
+    type: Function as PropType<(dataIndex: string) => void>,
     default: null,
   },
   // 支持回车键的组件类型
   supportEnterTypes: {
-    type: Array,
+    type: Array as PropType<string[]>,
     default: [],
   },
 });
-const formSelectedKeys = reactive({});
+const formSelectedKeys = reactive<Record<string, any[]>>({});
 const popupVisible = ref(false);
 const emit = defineEmits(["update:modelValue", "update:selectedKeys"]);
 
@@ -92,7 +94,8 @@ const getNextFocusableField = () => {
 
     // 检查该字段是否支持回车且未被禁用
     if (
-      props.supportEnterTypes.includes(formConfig?.type) &&
+      formConfig?.type &&
+      props.supportEnterTypes.includes(formConfig.type) &&
       !props.isFieldDisabled(nextField)
     ) {
       return nextField.dataIndex;
@@ -125,7 +128,7 @@ onMounted(() => {
     formSelectedKeys[props.field.dataIndex] = [];
   }
 });
-const handleUpdate = (value) => {
+const handleUpdate = (value: any) => {
   emit("update:modelValue", value);
 };
 const clearSelectedKeys = () => {
@@ -135,7 +138,7 @@ const clearSelectedKeys = () => {
 };
 
 // 表单提交事件 - 处理新增和编辑逻辑
-const handleFormSubmit = async ({ config, mode, data, record }) => {
+const handleFormSubmit = async ({ mode, data, record }: any) => {
   // config 是这个tableConfig的对象
   // mode 是新增还是编辑或者是其他的
   // data 是表单提交的数据
@@ -145,12 +148,12 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     datas.push({
       ...data,
       _rowIndex: datas.length,
-      [props.field.form.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
+      [props.field.form!.tableConfig?.rowKey || "key"]: String(Date.now() + Math.random()),
     });
     handleUpdate(datas);
   } else if (mode == "edit") {
     let datas = props.formData[props.field.dataIndex];
-    const index = datas.findIndex((item) => item._rowIndex === record._rowIndex);
+    const index = datas.findIndex((item: any) => item._rowIndex === record._rowIndex);
     if (index !== -1) {
       datas[index] = {
         ...datas[index],
@@ -160,7 +163,7 @@ const handleFormSubmit = async ({ config, mode, data, record }) => {
     }
   }
 };
-const dom = ref(null);
+const dom = ref<any>(null);
 
 const focus = () => {
   if (dom.value) {
@@ -172,7 +175,7 @@ const focus = () => {
         ?.querySelector("input");
       if (focusableElement && focusableElement.focus) {
         focusableElement.focus();
-        if (["select", "date", "time", "datetime"].includes(props.field.form.type)) {
+        if (props.field.form?.type && ["select", "date", "time", "datetime"].includes(props.field.form.type)) {
           popupVisible.value = true;
         }
       }
@@ -200,7 +203,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-input
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @keydown.enter="handleEnter"
@@ -219,7 +222,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-input-number
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @keydown.enter="handleEnter"
@@ -238,7 +241,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-textarea
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       :disabled="props.isFieldDisabled(props.field)"
@@ -266,7 +269,7 @@ defineExpose({
         :value="option.value"
         :disabled="
           typeof option.disabled === 'function'
-            ? option.disabled(props.formData, props.field)
+            ? (option.disabled as Function)(props.formData, props.field)
             : option.disabled
         "
       >
@@ -294,7 +297,7 @@ defineExpose({
         :value="option.value"
         :disabled="
           typeof option.disabled === 'function'
-            ? option.disabled(props.formData, props.field)
+            ? (option.disabled as Function)(props.formData, props.field)
             : option.disabled
         "
       >
@@ -312,7 +315,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-select
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       v-model:popup-visible="popupVisible"
@@ -327,7 +330,7 @@ defineExpose({
         :value="option.value"
         :disabled="
           typeof option.disabled === 'function'
-            ? option.disabled(props.formData, props.field)
+            ? (option.disabled as Function)(props.formData, props.field)
             : option.disabled
         "
       >
@@ -345,7 +348,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-date-picker
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       v-model:popup-visible="popupVisible"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
@@ -366,7 +369,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-time-picker
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       v-model:popup-visible="popupVisible"
@@ -386,7 +389,7 @@ defineExpose({
     :help="formErrors[props.field.dataIndex]"
   >
     <a-date-picker
-      :ref="(ref) => (dom = ref)"
+      :ref="(ref: any) => (dom = ref)"
       :model-value="props.formData[props.field.dataIndex]"
       @update:model-value="handleUpdate"
       @change="handleEnter"
@@ -437,7 +440,7 @@ defineExpose({
   >
     <slot
       :name="props.field.form.slotName"
-      :domRef="(ref) => (dom = ref)"
+      :domRef="(ref: any) => (dom = ref)"
       :field="props.field"
       :handleUpdate="handleUpdate"
       :handleEnter="handleEnter"
@@ -463,19 +466,19 @@ defineExpose({
       :config="{
         ...(props.field.form?.tableConfig ?? {}),
         handleFormSubmit: handleFormSubmit,
-        executeAction: async (action, records, params) => {
+        executeAction: async (action: any, records: any) => {
           if (action.key == 'delete') {
             let datas = props.formData[props.field.dataIndex];
             datas.splice(records._rowIndex, 1);
             handleUpdate(datas);
           }
         },
-      }"
+      } as TableConfig"
       :data="props.formData[props.field.dataIndex] || []"
       :loading="props.field.form.tableConfig?.loading"
       :selectedKeys="formSelectedKeys[props.field.dataIndex]"
       @update:selectedKeys="
-        (val) => {
+        (val: any[]) => {
           formSelectedKeys[props.field.dataIndex] = val;
         }
       "

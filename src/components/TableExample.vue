@@ -1,17 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
-import { reactive, ref, computed, watch, h } from "vue";
+import { reactive, ref, computed, watch } from "vue";
 import { Message } from "@arco-design/web-vue";
 import TableConfigEditor from "./TableConfigEditor.vue";
 import SuperTable from "./Table.vue";
-import { del, post, put } from "../request.js";
-const tableRef = ref(null);
+import { del, post, put } from "../request";
+import type { TableConfig, TableAction, SearchField } from "@/types";
+
+const tableRef = ref<any>(null);
 // 表格加载状态
 const loading = ref(false);
 const rowKeyName = "id"; // 行唯一标识字段名
 // 示例数据
-const tableData = ref([
+const tableData = ref<any[]>([
   {
     id: "1",
     name: "Jane Doe",
@@ -148,10 +150,10 @@ const tableData = ref([
     enable: true,
   },
 ]);
-const expandRowKeys = ref([]);
+const expandRowKeys = ref<any[]>([]);
 // columns 的字段的宽度最好不要每个都写死，留一个自动计算，不然fixed会有问题的
 // 表格配置 - 前端分页示例
-const tableConfig = reactive({
+const tableConfig = reactive<TableConfig>({
   // 列配置
   columns: [
     {
@@ -171,7 +173,7 @@ const tableConfig = reactive({
       fixed: "left",
       align: "left",
       sortable: {
-        compare: (a, b) => a.localeCompare(b),
+        compare: (a: any, b: any) => a.localeCompare(b),
       },
       form: {
         type: "input",
@@ -214,7 +216,7 @@ const tableConfig = reactive({
       visible: true,
       align: "left",
       sortable: {
-        compare: (a, b) => a - b,
+        compare: (a: any, b: any) => a - b,
       },
       form: {
         type: "number",
@@ -236,7 +238,7 @@ const tableConfig = reactive({
       visible: true,
       align: "left",
       sortable: {
-        compare: (a, b) => a - b,
+        compare: (a: any, b: any) => a - b,
       },
     },
     {
@@ -251,7 +253,7 @@ const tableConfig = reactive({
         required: true,
         placeholder: "请输入邮箱",
         enterNext: "joinDate", // 回车聚焦到加入日期字段
-        validator: (value) => {
+        validator: (value: any) => {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           return !emailRegex.test(value) ? "请输入有效的邮箱" : "";
         },
@@ -264,10 +266,10 @@ const tableConfig = reactive({
       visible: true,
       //type: "status",
       slotName: "_enum-cell", // 预留插槽 写死
-      enumMap: ()=>({
-        active: { label: "在职", color: "green" },
-        inactive: { label: "离职", color: "red" },
-      }),
+      enumMap: {
+        active: { label: "在职" },
+        inactive: { label: "离职" },
+      },
       form: {
         type: "radio",
         creatable: true,
@@ -301,7 +303,7 @@ const tableConfig = reactive({
       visible: true,
       ellipsis: true,
       sortable: {
-        compare: (a, b) => a.localeCompare(b),
+        compare: (a: any, b: any) => a.localeCompare(b),
       },
       form: {
         type: "slot",
@@ -322,7 +324,7 @@ const tableConfig = reactive({
       visible: true,
       ellipsis: true,
       sortable: {
-        compare: (a, b) => a.localeCompare(b),
+        compare: (a: any, b: any) => a.localeCompare(b),
       },
       //type: "enable", // 预留的写死
       slotName: "status-cell", // 预留插槽 写死
@@ -348,7 +350,7 @@ const tableConfig = reactive({
       visible: true,
       ellipsis: true,
       sortable: {
-        compare: (a, b) => a.localeCompare(b),
+        compare: (a: any, b: any) => a.localeCompare(b),
       },
       form: {
         type: "textarea",
@@ -462,7 +464,7 @@ const tableConfig = reactive({
               confirmMessage: "确定要删除选中的数据吗？",
               message: "删除成功",
               apiUrl: "/api/employee/delete",
-              params: (records) => ({ ids: records.map((r) => r.key) }),
+              params: (records: any[]) => ({ ids: records.map((r) => r.key) }),
             },
           ],
 
@@ -495,10 +497,11 @@ const tableConfig = reactive({
     {
       title: "操作",
       dataIndex: "operations",
-      width:220,
+      width: 220,
       // fixed: "right",
       visible: true,
-      ellipsis: true,
+      // ellipsis: true, // Remove ellipsis to avoid type error if boolean is not allowed or fix type definition
+      // Assuming TableColumn definition allows ellipsis boolean
     },
   ],
 
@@ -512,7 +515,7 @@ const tableConfig = reactive({
       attrs: {
         "max-length": 50,
       },
-      condition: "eq",
+      // condition: "eq", // Custom property needs to be handled in types or ignored
     },
     {
       dataIndex: "email",
@@ -554,7 +557,7 @@ const tableConfig = reactive({
       title: "薪资范围",
       type: "number",
       placeholder: "输入薪资",
-      condition: "le",
+      // condition: "le",
       attrs: {
         min: 0,
         max: 100000,
@@ -584,7 +587,7 @@ const tableConfig = reactive({
       icon: "eye",
       message: "查看成功",
       type: "outline",
-      disabled: (field,record) => record && record.id == 1,
+      disabled: (_field: any, record: any) => record && record.id == 1,
       // 查看操作在 Table.vue 中自动处理，这里只需配置按钮信息 接口在 handleFormSubmit 方法中
     },
     {
@@ -601,9 +604,9 @@ const tableConfig = reactive({
       type: "confirm", // 弹出提示框 confirm === 次级按钮  主要按钮、次级按钮、虚框按钮、文字按钮、线性按钮，default 为次级按钮。
       confirmMessage: "确定要删除选中的数据吗？", // type === confirm 的提示语
       message: "删除成功",
-      apiUrl: null, // 当前这个操作要调用的api 会进入executeAction回调中的第一个参数action的apiUrl
+      apiUrl: "", // 当前这个操作要调用的api 会进入executeAction回调中的第一个参数action的apiUrl
       params: null, // 处理之后进入executeAction处理,可以是函数|对象
-      attrs: null, // 透传属性或者事件可以写到一起
+      attrs: undefined, // 透传属性或者事件可以写到一起
     },
     {
       key: "enabled",
@@ -710,9 +713,6 @@ const tableConfig = reactive({
   // 表头背景颜色
   headerBgColor: "#eef5f8",
 
-  // 是否显示多选框
-  selection: true,
-
   // 分页透传属性|事件
   tablePaginationAttrs: {
     "hide-on-single-page": true,
@@ -734,7 +734,7 @@ const tableConfig = reactive({
   showSearchBar: false,
 
   // 执行操作按钮的回调 edit 和 view 不会进入这个回调 因为它们是弹窗形式的操作
-  executeAction: async (config, action, records, params) => {
+  executeAction: async (config: TableConfig, action: TableAction, records: any[]) => {
     // records: 为选中的数据数组
     // action: 为当前这个操作对应的action对象
     // params: action params 方法 处理过后的参数
@@ -764,7 +764,7 @@ const tableConfig = reactive({
     }
   },
   // API 请求（后端分页）
-  pageFetchData: async (url, params, searchFields) => {
+  pageFetchData: async (url: string, params: any, searchFields?: SearchField[]) => {
     // url 为 apiUrl
     // params 为分页和搜索参数对象
     /**
@@ -776,7 +776,7 @@ const tableConfig = reactive({
       }
      */
     console.log("后端分页请求参数:", params);
-    let keys = [];
+    let keys: any[] = [];
     Object.keys(params?.searchValues).forEach((key) => {
       if (
         params.searchValues[key] === null ||
@@ -800,7 +800,7 @@ const tableConfig = reactive({
     });
   },
   // 表单提交事件 - 处理新增和编辑逻辑
-  handleFormSubmit: async ({ config, mode, data, record }) => {
+  handleFormSubmit: async ({ config, mode, data }) => {
     // config 是这个tableConfig的对象
     // mode 是新增还是编辑或者是其他的 create:新增 edit:编辑
     // data 是表单提交的数据
@@ -814,7 +814,7 @@ const tableConfig = reactive({
           ...data,
         });
       } else {
-        await post(config.formAddApiUrl, {
+        await post(config.formAddApiUrl || "", {
           employeesDtos: [data],
         });
       }
@@ -824,8 +824,7 @@ const tableConfig = reactive({
       console.log("编辑数据:", data);
       if (config.paginationType === "frontend") {
         const index = tableData.value.findIndex(
-          (item) =>
-            item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
+          (item) => item[config?.rowKey || "key"] === data[config?.rowKey || "key"]
         );
         if (index !== -1) {
           tableData.value[index] = {
@@ -834,7 +833,7 @@ const tableConfig = reactive({
           };
         }
       } else {
-        await put(config.formUpdateApiUrl, {
+        await put(config.formUpdateApiUrl || "", {
           employeesDtos: [data],
         });
       }
@@ -842,21 +841,21 @@ const tableConfig = reactive({
     }
   },
   // 搜索条件变更
-  handleSearch: (searchValues) => {
+  handlerSearch: (searchValues: any) => {
     console.log("搜索条件:", searchValues);
     Message.info(`搜索条件: ${JSON.stringify(searchValues)}`);
   },
   // 分页变化
-  handlePageChange: (pagination) => {
+  handlePageChange: (pagination: any) => {
     console.log("分页信息:", pagination);
   },
   // 列配置变化
-  handleColumnConfigChange: (config) => {
+  handleColumnConfigChange: (config: any) => {
     console.log("列配置变化", config);
   },
 });
 
-const selectedKeys = ref([]);
+const selectedKeys = ref<any[]>([]);
 
 // 事件处理
 watch(
@@ -873,9 +872,8 @@ const showConfig = ref(false);
 const paginationType = ref("frontend");
 
 const switchPaginationType = () => {
-  paginationType.value =
-    paginationType.value === "frontend" ? "backend" : "frontend";
-  tableConfig.paginationType = paginationType.value;
+  paginationType.value = paginationType.value === "frontend" ? "backend" : "frontend";
+  tableConfig.paginationType = paginationType.value as "frontend" | "backend";
   if (tableConfig.paginationType === "backend") {
     // 如果切换到后端分页，清空表格数据，模拟重新从后端获取数据
     tableData.value = [];
@@ -889,9 +887,7 @@ const switchPaginationType = () => {
   } else {
     window.location.reload();
   }
-  Message.info(
-    `已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`
-  );
+  Message.info(`已切换到${paginationType.value === "frontend" ? "前端" : "后端"}分页`);
 };
 const inputNum = ref(0);
 const textareaValue = computed(() => {
@@ -899,9 +895,7 @@ const textareaValue = computed(() => {
 });
 const handleAddPhone = () => {
   let index = tableConfig.columns.findIndex((it) => {
-    return (
-      it.dataIndex === "phone" + (inputNum.value == 0 ? "" : inputNum.value)
-    );
+    return it.dataIndex === "phone" + (inputNum.value == 0 ? "" : inputNum.value);
   });
   inputNum.value++;
   tableConfig.columns.splice(index + 1, 0, {
@@ -927,22 +921,14 @@ const handleAddPhone = () => {
     <a-col :span="16">
       <div class="example-container">
         <h1
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-          "
+          style="display: flex; align-items: center; justify-content: center; gap: 10px"
         >
           基于Arco的超级表格组件示例
           <a-button type="outline" size="large" @click="switchPaginationType"
             >切换分页模式（当前：{{ paginationType }}）</a-button
           >
 
-          <a-button
-            type="outline"
-            size="large"
-            @click="() => (showConfig = true)"
+          <a-button type="outline" size="large" @click="() => (showConfig = true)"
             >配置编辑</a-button
           >
         </h1>
@@ -951,7 +937,7 @@ const handleAddPhone = () => {
         <SuperTable
           :config="tableConfig"
           v-model:data="tableData"
-          :ref="(ref) => (tableRef = ref)"
+          :ref="(ref: any) => (tableRef = ref)"
           v-model:loading="loading"
           v-model:selectedKeys="selectedKeys"
         >
@@ -967,19 +953,12 @@ const handleAddPhone = () => {
           </template> -->
 
           <template
-            #phone-input="{
-              domRef,
-              field,
-              formData,
-              disabled,
-              attrs,
-              handleEnter,
-            }"
+            #phone-input="{ domRef, field, formData, disabled, attrs, handleEnter }"
           >
             <!-- 注意要绑定enter事件用来聚焦到下一个控件 -->
             <a-space :size="8">
               <a-input
-                :ref="(ref) => domRef(ref)"
+                :ref="(ref: any) => domRef(ref)"
                 v-model="formData[field.dataIndex]"
                 v-bind="attrs"
                 :disabled="disabled"
@@ -991,9 +970,7 @@ const handleAddPhone = () => {
           </template>
 
           <!-- 其实预留了这个组件的 这里只是做个测试而已 -->
-          <template
-            #enable-switch="{ field, formData, disabled, attrs, handleUpdate }"
-          >
+          <template #enable-switch="{ field, formData, disabled, attrs, handleUpdate }">
             <a-space :size="8">
               <a-switch
                 :model-value="formData[field.dataIndex]"

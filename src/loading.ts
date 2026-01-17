@@ -4,9 +4,9 @@
  */
 class GlobalLoading {
     // 单例模式，避免重复创建
-    static instance = null;
+    static instance: GlobalLoading | null = null;
     // Loading 容器元素
-    #loadingEl = null;
+    #loadingEl: HTMLElement | null = null;
     // 加载文本默认值
     #defaultText = '加载中...';
 
@@ -71,10 +71,11 @@ class GlobalLoading {
      * 2. 创建 Loading DOM 结构
      * @param {string} text - 自定义加载文本
      */
-    #createLoadingDom(text = this.#defaultText) {
+    #createLoadingDom(text: string = this.#defaultText) {
         // 若已存在，直接更新文本并显示
         if (this.#loadingEl) {
-            this.#loadingEl.querySelector('.global-loading-text').textContent = text;
+            const textEl = this.#loadingEl.querySelector('.global-loading-text');
+            if (textEl) textEl.textContent = text;
             this.#loadingEl.style.display = 'flex';
             return;
         }
@@ -110,7 +111,7 @@ class GlobalLoading {
      * 3. 显示全局 Loading
      * @param {string} [text] - 自定义加载文本
      */
-    show(text) {
+    show(text?: string) {
         // 确保 DOM 加载完成后执行
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.#createLoadingDom(text));

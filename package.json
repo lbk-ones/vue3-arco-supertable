@@ -1,7 +1,7 @@
 {
   "name": "arco-vue3-supertable",
   "private": false,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "一个基于arco的vue3超级表格，基于配置来动态生成表格和表单",
   "keywords": [
     "vue",
@@ -12,14 +12,16 @@
   "license": "MIT",
   "main": "./dist/arco-vue3-supertable.umd.js",
   "module": "./dist/arco-vue3-supertable.es.js",
+  "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/arco-vue3-supertable.es.js",
-      "require": "./dist/arco-vue3-supertable.umd.js"
+      "types": "./dist/types/vue3-arco-supertable.d.ts",
+      "import": "./dist/vue3-arco-supertable.es.js",
+      "require": "./dist/vue3-arco-supertable.umd.js"
     },
     "./dist/arco-vue3-supertable.css": "./dist/arco-vue3-supertable.css"
   },
-  "types": "./dist/types/index.d.ts",
+  "types": "./dist/types/vue3-arco-supertable.d.ts",
   "typesVersions": {
     "*": {
       "*": [
@@ -35,9 +37,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "local-pack": "pnpm run build && pnpm pack"
+    "local-pack": "pnpm run build && pnpm pack",
+    "type-check": "vue-tsc --noEmit --project tsconfig.types.json",
+    "build:types": "vue-tsc --emitDeclarationOnly --project tsconfig.types.json"
   },
   "dependencies": {
     "axios": "^1.13.2",
@@ -46,8 +50,12 @@
   },
   "devDependencies": {
     "@arco-design/web-vue": "^2.57.0",
+    "@types/node": "^25.0.9",
     "@vitejs/plugin-vue": "^6.0.1",
+    "typescript": "^5.9.3",
     "vite": "^7.2.4",
-    "vite-plugin-static-copy": "^3.1.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-static-copy": "^3.1.4",
+    "vue-tsc": "^3.2.2"
   }
 }

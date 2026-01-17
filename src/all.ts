@@ -1,5 +1,5 @@
 // 整理所有属性到一个对象
-let wt = {
+const wt = {
   // Column Configuration
   columns: [
     {
@@ -175,3 +175,5 @@ let wt = {
   contextMenuEnabled: true,
   showSearchBar: false,
 }
+
+export default wt;

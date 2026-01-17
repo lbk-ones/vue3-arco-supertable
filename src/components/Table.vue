@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {
   reactive,
   computed,
@@ -6,157 +6,129 @@ import {
   onMounted,
   watch,
   ref,
-  onBeforeUpdate,
-  readonly,
+  type PropType,
 } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 import TableInfo from "./TableInfo.vue";
+import type { TableConfig, TableColumn, TableAction, SearchField } from "@/types";
 
 // Props 定义
 const props = defineProps({
   // 表格配置
   config: {
-    type: Object,
+    type: Object as PropType<TableConfig>,
     required: true,
-    // 示例配置结构：
-    // {
-    //   columns: [],                    // 列配置
-    //   searchFields: [],               // 搜索字段
-    //   paginationType: 'backend' | 'frontend',  // 分页类型
-    //   pageSize: 10,
-    //   pageApiUrl: '/api/list',            // 后端分页接口
-    //   actions: [],                    // 操作按钮配置
-    //   showColumnConfig: true,         // 是否显示列配置
-    //   showForm: true,                 // 是否显示新增/编辑表单
-    //   tableSize: 'small|medium|large',// 表格大小
-    //   rowKey: 'key',                  // 行唯一标识字段名
-    //   scroll: { x: 1200, y: ... },    // 滚动配置
-    //   selection: true,                // 是否显示选择列
-    //   bordered: true|{cell:true},     // 边框配置，true=显示外框，{cell:true}=显示所有边框
-    //   hoverable: true,                // 是否显示行悬停效果
-    //   columnResizable: true,          // 列是否可拖拽调整宽度
-    //   stripe: false,                  // 是否显示斑马纹
-    //   pageSizeOptions: [10,20,50,100],// 分页选项
-    //   uniqueId: 'uid',                // 表格唯一标识 (必填，开启本地存储时需要)
-    //   userCode: 'user1',              // 用户自定义代码 (可选，用于区分不同用户配置)
-    //   enableLocalStorage: true,       // 是否启用本地存储
-    // }
-    default: () => {
-      return {
-        // 列配置
-        columns: [],
-        // 搜索字段配置
-        searchFields: [],
-        // 分页类型：frontend（前端分页）或 backend（后端分页）
-        paginationType: "frontend",
-        pageSize: 10,
-        pageSizeOptions: [5, 10, 20, 50],
+    default: () => ({
+      // 列配置
+      columns: [],
+      // 搜索字段配置
+      searchFields: [],
+      // 分页类型：frontend（前端分页）或 backend（后端分页）
+      paginationType: "frontend",
+      pageSize: 10,
+      pageSizeOptions: [5, 10, 20, 50],
 
-        // 后端分页配置（如果使用后端分页）
-        pageApiUrl: "",
+      // 后端分页配置（如果使用后端分页）
+      pageApiUrl: "",
 
-        // 后端表单新增接口地址
-        formAddApiUrl: "",
+      // 后端表单新增接口地址
+      formAddApiUrl: "",
 
-        // 后端表单更新的接口地址
-        formUpdateApiUrl: "",
+      // 后端表单更新的接口地址
+      formUpdateApiUrl: "",
 
-        // 后端表格删除接口
-        formDeleteApiUrl: "",
+      // 后端表格删除接口
+      formDeleteApiUrl: "",
 
-        // 操作按钮配置
-        actions: [],
+      // 操作按钮配置
+      actions: [],
 
-        // 是否显示列配置按钮
-        showColumnConfig: true,
+      // 是否显示列配置按钮
+      showColumnConfig: true,
 
-        // 表描述
-        cnDesc: "超级表格",
+      // 表描述
+      cnDesc: "超级表格",
 
-        // 是否显示表单（新增/编辑）
-        showForm: true,
+      // 是否显示表单（新增/编辑）
+      showForm: true,
 
-        // 表格大小
-        tableSize: "small",
+      // 表格大小
+      tableSize: "small",
 
-        // 弹窗宽度
-        modalWidth: 1000,
+      // 弹窗宽度
+      modalWidth: 1000,
 
-        // 表单布局
-        formLayout: "horizontal", // 表单布局 horizontal vertical
+      // 表单布局
+      formLayout: "horizontal", // 表单布局 horizontal vertical
 
-        // 表单列数，4代表一行4列
-        formColumns: 4,
+      // 表单列数，4代表一行4列
+      formColumns: 4,
 
-        // 表格滚动配置
-        scroll: { x: 1200, y: "auto" },
+      // 表格滚动配置
+      scroll: { x: 1200, y: "auto" },
 
-        // 是否显示选择列
-        selection: true,
+      // 是否显示选择列
+      selection: true,
 
-        // 表格样式配置
-        bordered: { cell: true }, // 边框配置：true=外框，{cell:true}=所有单元格边框
+      // 表格样式配置
+      bordered: { cell: true }, // 边框配置：true=外框，{cell:true}=所有单元格边框
 
-        // 行悬停效果
-        hoverable: true,
+      // 行悬停效果
+      hoverable: true,
 
-        // 列宽可拖拽调整
-        columnResizable: true,
+      // 列宽可拖拽调整
+      columnResizable: true,
 
-        // 斑马纹背景
-        stripe: false,
+      // 斑马纹背景
+      stripe: false,
 
-        // 行唯一标识字段名
-        rowKey: "key", // 对应数据中的唯一标识字段，默认值为 'key'
+      // 行唯一标识字段名
+      rowKey: "key", // 对应数据中的唯一标识字段，默认值为 'key'
 
-        // 显示表头
-        showHeader: true,
+      // 显示表头
+      showHeader: true,
 
-        // 表格透传属性|事件
-        tableAttrs: {},
+      // 表格透传属性|事件
+      tableAttrs: {},
 
-        // hover 行背景颜色
-        hoverColor: "#eef5f8",
+      // hover 行背景颜色
+      hoverColor: "#eef5f8",
 
-        // hover 字体颜色
-        hoverFontColor: "",
+      // hover 字体颜色
+      hoverFontColor: "",
 
-        // 表头字体颜色 （表头字体默认加粗 不做更改）
-        // headerFontColor:'#7f70a0',
-        headerFontColor: "",
+      // 表头字体颜色 （表头字体默认加粗 不做更改）
+      // headerFontColor:'#7f70a0',
+      headerFontColor: "",
 
-        // 表头背景颜色
-        headerBgColor: "#eef5f8",
+      // 表头背景颜色
+      headerBgColor: "#eef5f8",
 
-        // 是否显示多选框
-        selection: true,
+      // 分页透传属性|事件
+      tablePaginationAttrs: {
+        "hide-on-single-page": true,
+      },
 
-        // 分页透传属性|事件
-        tablePaginationAttrs: {
-          "hide-on-single-page": true,
-        },
+      // 表格唯一标识 (必填，开启本地存储时需要)
+      uniqueId: "",
 
-        // 表格唯一标识 (必填，开启本地存储时需要)
-        uniqueId: "",
+      // 用户自定义代码 (可选，用于区分不同用户配置)
+      userCode: "",
 
-        // 用户自定义代码 (可选，用于区分不同用户配置)
-        userCode: "",
+      // 是否启用本地存储
+      enableLocalStorage: false,
 
-        // 是否启用本地存储
-        enableLocalStorage: false,
+      // 是否启用右键菜单
+      contextMenuEnabled: true,
 
-        // 是否启用右键菜单
-        contextMenuEnabled: true,
-
-        // 是否直接显示搜索条件
-        showSearchBar: false,
-      };
-    },
+      // 是否直接显示搜索条件
+      showSearchBar: false,
+    } as TableConfig),
   },
   // 表格数据（前端分页或初始数据）
   data: {
-    type: Array,
+    type: Array as PropType<any[]>,
     default: () => [],
   },
   // 是否加载中
@@ -171,7 +143,7 @@ const props = defineProps({
   },
   // 选中行数组，由外部传进来
   selectedKeys: {
-    type: Array,
+    type: Array as PropType<any[]>,
     default: () => [],
   },
   // 表单禁用状态
@@ -183,12 +155,6 @@ const props = defineProps({
 
 // Emits 定义
 const emit = defineEmits([
-  // "action-click", // 操作按钮点击
-  // "search", // 搜索事件
-  //"page-change", // 分页变化
-  //"column-config-change", // 列配置变化
-  // "api-request", // API 请求（后端分页）
-  // "form-submit", // 表单提交
   "update:selectedKeys", // 选中行变化
   "update:data", // 表格数据集合变化
   "update:loading", // 表格数据集合变化
@@ -196,35 +162,33 @@ const emit = defineEmits([
 
 // 状态管理
 const state = reactive({
-  //selectedKeys: [],
-  searchValues: {}, // 搜索值对象
+  searchValues: {} as Record<string, any>, // 搜索值对象
   currentPage: 1,
   pageSize: props.config.pageSize || 10,
-  columnConfig: [], // 当前列配置
+  columnConfig: [] as TableColumn[], // 当前列配置
   totalCount: 0, // 总数据条数
-  //apiData: [], // API 返回的数据
   visibleColumnModal: false, // 列配置弹窗
-  columnOrder: [], // 列顺序
-  columnVisibility: {}, // 列显示状态
+  columnOrder: [] as any[], // 列顺序
+  columnVisibility: {} as Record<string, boolean>, // 列显示状态
   visibleSearchBar: false, // 搜索条件展开状态
   columnSearchValue: "", // 列配置搜索值
-  highlightedColumns: new Set(), // 高亮的列名集合
+  highlightedColumns: new Set<string>(), // 高亮的列名集合
   formVisible: false, // 表单弹窗
-  formMode: "create", // 表单模式：create、edit 或 readonly
-  formRecord: null, // 编辑的记录
+  formMode: "create" as "create" | "edit" | "readonly", // 表单模式
+  formRecord: null as any, // 编辑的记录
   viewListVisible: false, // 多条记录选择列表弹窗
-  viewListRecords: [], // 要查看/编辑的多条记录
-  viewListMode: "view", // 列表模式：view 或 edit
-  currentViewRecord: null, // 当前查看的单条记录
+  viewListRecords: [] as any[], // 要查看/编辑的多条记录
+  viewListMode: "view" as "view" | "edit", // 列表模式
+  currentViewRecord: null as any, // 当前查看的单条记录
   contextMenuVisible: false, // 右键菜单显示状态
   contextMenuPosition: { x: 0, y: 0 }, // 右键菜单位置
-  contextMenuRecord: null, // 右键点击的行数据
+  contextMenuRecord: null as any, // 右键点击的行数据
 });
 
 const visibleTableInfo = ref(false); // 表格信息弹窗
 
 // 表格表单引用
-const tableFormRef = ref(null);
+const tableFormRef = ref<any>(null);
 
 // 环境检查
 const isBrowser = typeof window !== "undefined";
@@ -239,7 +203,8 @@ const getStorageKey = () => {
 };
 
 // 安全解析JSON
-const safeParse = (str) => {
+const safeParse = (str: string | null) => {
+  if (!str) return null;
   try {
     return JSON.parse(str);
   } catch (e) {
@@ -249,14 +214,14 @@ const safeParse = (str) => {
 };
 
 // 合并配置（保留本地存储的顺序和宽度，合并代码中的新列）
-const mergeConfig = (defaultCols, storedCols) => {
-  const merged = [];
+const mergeConfig = (defaultCols: TableColumn[], storedCols: TableColumn[]) => {
+  const merged: TableColumn[] = [];
   const defaultMap = new Map(defaultCols.map((col) => [col.dataIndex, col]));
 
   // 1. 优先使用存储中的列配置（保持顺序）
   storedCols.forEach((sc) => {
     if (defaultMap.has(sc.dataIndex)) {
-      const col = defaultMap.get(sc.dataIndex);
+      const col = defaultMap.get(sc.dataIndex)!;
       // 应用存储的宽度
       if (sc.width) col.width = sc.width;
       if (sc.fixed) col.fixed = sc.fixed;
@@ -279,7 +244,7 @@ const mergeConfig = (defaultCols, storedCols) => {
 };
 
 // 保存配置到本地存储
-const saveConfigToStorage = (field, columns) => {
+const saveConfigToStorage = (field: string, columns: TableColumn[]) => {
   if (!props.config.enableLocalStorage || !isBrowser) return;
   const key = getStorageKey();
   if (!key) return;
@@ -315,7 +280,7 @@ const saveConfigToStorage = (field, columns) => {
 
 // 重置列配置
 const handleResetColumnConfig = () => {
-  let targetConfig = null;
+  let targetConfig: TableColumn[] | null = null;
   const key = getStorageKey();
 
   // 尝试从 storage 获取 initialValue
@@ -339,7 +304,7 @@ const handleResetColumnConfig = () => {
   }
 
   // 更新状态
-  updateStateColumns(targetConfig);
+  updateStateColumns(targetConfig!);
 
   // 同步更新 latestValue
   if (props.config.enableLocalStorage) {
@@ -348,6 +313,7 @@ const handleResetColumnConfig = () => {
 
   Message.success("已重置为初始配置");
 };
+
 // 清除缓存
 const clearCache = () => {
   const key = getStorageKey();
@@ -358,12 +324,12 @@ const clearCache = () => {
 };
 
 // 统一更新列状态的辅助函数
-const updateStateColumns = (columns) => {
+const updateStateColumns = (columns: TableColumn[]) => {
   state.columnConfig = columns;
   state.columnOrder = [];
   //state.columnVisibility = {}; // 不直接重置对象，而是更新属性，保持响应性
   // 清理旧的可见性状态? 还是直接覆盖? 直接覆盖即可。
-  const newVisibility = {};
+  const newVisibility: Record<string, boolean> = {};
 
   state.columnConfig.forEach((col, index) => {
     // 确定可见性
@@ -435,6 +401,7 @@ watch(
   },
   { deep: true }
 );
+
 const columnLength = computed(() => props.config?.columns?.length ?? 0);
 // 监听 columns 变化，初始化列配置 只有长度变化才重新初始化
 watch(columnLength, (newVal, oldVal) => {
@@ -466,23 +433,23 @@ const tableData = computed(() => {
   } else {
     // 前端分页
     const filtered = getFilteredData();
-    const start = (state.currentPage - 1) * state.pageSize;
-    const end = start + state.pageSize;
+    const start = (state.currentPage - 1) * (state.pageSize || 10);
+    const end = start + (state.pageSize || 10);
     return filtered.slice(start, end);
   }
 });
 
 // 获取筛选后的数据
 const getFilteredData = () => {
-  let result = props.data;
+  let result = props.data || [];
 
   // 应用搜索过滤
   if (props.config.searchFields && Object.keys(state.searchValues).length > 0) {
-    result = result.filter((item) => {
+    result = result.filter((item: any) => {
       return Object.entries(state.searchValues).every(([field, value]) => {
         if (value === null || value === undefined || value === "") return true;
 
-        const searchField = props.config.searchFields.find((f) => f.dataIndex === field);
+        const searchField = props.config.searchFields?.find((f) => f.dataIndex === field);
         const fieldValue = item[field];
         const fieldType = searchField?.type || "input";
 
@@ -491,7 +458,7 @@ const getFilteredData = () => {
           case "checkbox": // 复选框：数组类型，检查是否有交集
             if (Array.isArray(value) && value.length > 0) {
               const itemValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
-              return value.some((v) => itemValue.includes(v));
+              return value.some((v: any) => itemValue.includes(v));
             }
             return true;
 
@@ -533,7 +500,7 @@ const totalCount = computed(() => {
 });
 
 // 获取搜索字段的选项
-const getSearchOptions = (field) => {
+const getSearchOptions = (field: SearchField) => {
   if (!field.options) return [];
 
   // 如果是函数，则调用函数获取选项
@@ -581,7 +548,7 @@ const fetchData = async () => {
     let records = data?.records || [];
     emit("update:data", records);
     //state.apiData = records || [];
-    state.totalCount = parseInt(data?.total || 0);
+    state.totalCount = Number(data?.total || 0);
   } catch (error) {
     console.error("数据加载失败:", error);
     Message.error("数据加载失败");
@@ -591,7 +558,7 @@ const fetchData = async () => {
 };
 
 // 分页变化
-const handlePageChange = (page) => {
+const handlePageChange = (page: number) => {
   state.currentPage = page;
   if (props.config.paginationType === "backend") {
     fetchData();
@@ -599,7 +566,7 @@ const handlePageChange = (page) => {
   props.config?.handlePageChange?.({ page, pageSize: state.pageSize });
 };
 
-const handlePageSizeChange = (pageSize) => {
+const handlePageSizeChange = (pageSize: number) => {
   state.pageSize = pageSize;
   state.currentPage = 1;
   if (props.config.paginationType === "backend") {
@@ -609,7 +576,7 @@ const handlePageSizeChange = (pageSize) => {
 };
 
 // 行选择
-const handleSelectionChange = (keys) => {
+const handleSelectionChange = (keys: any[]) => {
   emit("update:selectedKeys", keys);
 };
 
@@ -619,7 +586,7 @@ const getKeyName = () => {
 };
 
 // 行点击事件
-const handleRowClick = (record) => {
+const handleRowClick = (record: any) => {
   if (props.config.selection === false) return;
   const key = record[getKeyName()];
   let selectKeys = [...props.selectedKeys];
@@ -636,7 +603,7 @@ const handleRowClick = (record) => {
 };
 
 // 右键菜单处理
-const handleRowContextMenu = (record, event) => {
+const handleRowContextMenu = (record: any, event: MouseEvent) => {
   if (props.config.contextMenuEnabled === false) return;
 
   event.preventDefault();
@@ -661,8 +628,9 @@ const closeContextMenu = () => {
 
 // 监听全局点击关闭菜单
 const handleGlobalClick = () => closeContextMenu();
-const handleGlobalContextMenu = (e) => {
-  if (!e.target.closest(".arco-table-tr")) {
+const handleGlobalContextMenu = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  if (!target.closest(".arco-table-tr")) {
     closeContextMenu();
   }
 };
@@ -694,21 +662,31 @@ const visibleActions = computed(() => {
 });
 
 // 是否需要选择数据默认为true
-const isNeedSelect = (action) => {
+const isNeedSelect = (action: TableAction) => {
   return action.needSelect !== void 0 ? action.needSelect : true;
 };
 
+// 检查字段是否禁用
+const isDisabled = (field: any, record?: any) => {
+  if (!field) return false;
+  const disabled = field.disabled;
+  if (typeof disabled === "function") {
+    return disabled(field, record);
+  }
+  return disabled === true;
+};
+
 // 操作按钮点击（传递选中的行数组）
-const handleActionClick = (action, record) => {
+const handleActionClick = (action: TableAction, record?: any) => {
   let needSelect = isNeedSelect(action);
   // 获取选中行对应的记录 - 从完整数据中查找
-  const sourceData = props.data;
-  let selectedRecords = [];
+  const sourceData = props.data || [];
+  let selectedRecords: any[] = [];
   if (record) {
     selectedRecords = [record];
   } else {
     selectedRecords = props.selectedKeys
-      .map((key) => sourceData.find((item) => item[getKeyName()] === key))
+      .map((key) => sourceData.find((item: any) => item[getKeyName()] === key))
       .filter(Boolean);
     if (needSelect) {
       let disabledSelectedRecords = selectedRecords.filter((record) =>
@@ -781,7 +759,7 @@ const handleActionClick = (action, record) => {
   }
 };
 // 执行callback回调
-const executeAction = async (action, records) => {
+const executeAction = async (action: TableAction, records: any[]) => {
   if (props.config.executeAction) {
     let params = records;
     if (action.params) {
@@ -791,7 +769,7 @@ const executeAction = async (action, records) => {
         params = action.params;
       }
     }
-    let config = {};
+    let config = {} as TableConfig;
     try {
       config = JSON.parse(JSON.stringify(props.config));
     } catch (error) {
@@ -827,7 +805,7 @@ const handleColumnConfigChange = () => {
 };
 
 // 上移列
-const moveColumnUp = (index) => {
+const moveColumnUp = (index: number) => {
   if (index === 0) return;
   const temp = state.columnConfig[index];
   state.columnConfig[index] = state.columnConfig[index - 1];
@@ -835,7 +813,7 @@ const moveColumnUp = (index) => {
 };
 
 // 下移列
-const moveColumnDown = (index) => {
+const moveColumnDown = (index: number) => {
   if (index === state.columnConfig.length - 1) return;
   const temp = state.columnConfig[index];
   state.columnConfig[index] = state.columnConfig[index + 1];
@@ -859,7 +837,7 @@ watch(
 
     // 实时更新高亮
     state.highlightedColumns.clear();
-    const matchingIndices = [];
+    const matchingIndices: number[] = [];
     state.columnConfig.forEach((col, index) => {
       if (col?.title?.toLowerCase()?.includes(newVal?.toLowerCase())) {
         state.highlightedColumns.add(col.dataIndex);
@@ -896,14 +874,14 @@ const openCreateForm = () => {
 };
 
 // 打开编辑表单
-const openEditForm = (record) => {
+const openEditForm = (record: any) => {
   state.formMode = "edit";
   state.formRecord = JSON.parse(JSON.stringify(record));
   state.formVisible = true;
 };
 
 // 打开只读查看表单
-const openViewForm = (record) => {
+const openViewForm = (record: any) => {
   state.formMode = "readonly";
   state.formRecord = JSON.parse(JSON.stringify(record));
   state.currentViewRecord = record;
@@ -911,14 +889,14 @@ const openViewForm = (record) => {
 };
 
 // 显示多条记录选择列表（通用）
-const showSelectListModal = (records, mode = "view") => {
+const showSelectListModal = (records: any[], mode: "view" | "edit" = "view") => {
   state.viewListRecords = records;
   state.viewListMode = mode;
   state.viewListVisible = true;
 };
 
 // 从列表中选择一条记录进行操作
-const selectRecord = (record) => {
+const selectRecord = (record: any) => {
   state.viewListVisible = false;
 
   if (state.viewListMode === "edit") {
@@ -929,7 +907,7 @@ const selectRecord = (record) => {
 };
 
 // 处理表单提交
-const handleFormSubmit = async (formData) => {
+const handleFormSubmit = async (formData: any) => {
   if (props?.config?.handleFormSubmit) {
     await props.config.handleFormSubmit({
       config: JSON.parse(JSON.stringify(props.config)),
@@ -949,7 +927,7 @@ const handleFormSubmit = async (formData) => {
 };
 
 // 表单提交成功
-const handleFormSuccess = (data) => {
+const handleFormSuccess = () => {
   Message.success(state.formMode === "create" ? "新增成功" : "修改成功");
   state.formVisible = false;
   // 刷新表格数据
@@ -959,20 +937,11 @@ const handleFormSuccess = (data) => {
 };
 
 // 弹窗状态变化
-const formModalChangeVisible = (val) => {
+const formModalChangeVisible = (val: boolean) => {
   state.formVisible = val;
 };
 
-// 检查字段是否禁用
-const isDisabled = (field, record) => {
-  if (!field) return false;
-  const disabled = field.disabled;
-  if (typeof disabled === "function") {
-    return disabled(field, record);
-  }
-  return disabled === true;
-};
-const getPrepend = (field) => {
+const getPrepend = (field: any) => {
   if (field.condition === "lt") {
     return "<";
   }
@@ -986,7 +955,7 @@ const getPrepend = (field) => {
     return "";
   }
 };
-const columnMapTransfer = (column,fieldName) => {
+const columnMapTransfer = (column: any, fieldName: string) => {
   let find = props?.config?.columns?.find((c) => c.dataIndex === column.dataIndex);
   let columnElement = find?.[fieldName] ?? null;
   if(columnElement){
@@ -1023,9 +992,11 @@ defineExpose({
     <div class="table-toolbar" style="margin-bottom: 10px">
       <!-- 左侧：操作按钮 -->
       <div class="action-area">
-        <span style="font-weight: 700; font-size: 1rem; color:#000" v-if="!!config.cnDesc">{{
-          config.cnDesc || ""
-        }}</span>
+        <span
+          style="font-weight: 700; font-size: 1rem; color: #000"
+          v-if="!!config.cnDesc"
+          >{{ config.cnDesc || "" }}</span
+        >
         <!-- 新增按钮 -->
         <a-button
           v-if="config.showForm"
@@ -1248,7 +1219,11 @@ defineExpose({
             <template v-else-if="field.type === 'switch'">
               <a-switch
                 v-model="state.searchValues[field.dataIndex]"
-                :size="config.tableSize || 'small'"
+                :size="
+                  config.tableSize === 'medium' || config.tableSize === 'large'
+                    ? 'medium'
+                    : 'small'
+                "
                 @change="handleSearch"
                 v-bind="field.attrs || {}"
                 v-on="field.attrs || {}"
@@ -1322,15 +1297,13 @@ defineExpose({
       <template #_tag-cell="{ record, column }">
         <a-tag
           :color="
-            columnMapTransfer(column,'tagMap')?.[
-              record[column.dataIndex]
-            ]?.color || 'blue'
+            columnMapTransfer(column, 'tagMap')?.[record[column.dataIndex]]?.color ||
+            'blue'
           "
         >
           {{
-            columnMapTransfer(column,'tagMap')?.[
-              record[column.dataIndex]
-            ]?.label || record[column.dataIndex]
+            columnMapTransfer(column, "tagMap")?.[record[column.dataIndex]]?.label ||
+            record[column.dataIndex]
           }}
         </a-tag>
       </template>
@@ -1338,9 +1311,8 @@ defineExpose({
       <!-- 枚举列插槽 -->
       <template #_enum-cell="{ record, column }">
         {{
-          columnMapTransfer(column,'enumMap')?.[
-            record[column.dataIndex]
-          ]?.label || record[column.dataIndex]
+          columnMapTransfer(column, "enumMap")?.[record[column.dataIndex]]?.label ||
+          record[column.dataIndex]
         }}
       </template>
 
@@ -1398,7 +1370,7 @@ defineExpose({
             ).length > 0
           "
           trigger="hover"
-          @select="(action) => handleActionClick(action, record)"
+          @select="(action: any) => handleActionClick(action as TableAction, record)"
         >
           <a-button type="outline" :size="config.tableSize || 'small'"
             ><icon-drag-dot-vertical
@@ -1548,8 +1520,8 @@ defineExpose({
       :visible="state.viewListVisible"
       :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
       @update:visible="(val) => (state.viewListVisible = val)"
-      :ok-text="null"
-      :cancel-text="null"
+      :ok-text="undefined"
+      :cancel-text="undefined"
       hide-cancel
       width="600"
     >
@@ -1599,7 +1571,7 @@ defineExpose({
       :record="state.formRecord"
       :columns="config.columns"
       :config="config"
-      :selected-keys="readonly(props.selectedKeys)"
+      :selected-keys="[...props.selectedKeys]"
       @update:visible="formModalChangeVisible"
       @update:selected-keys="(val) => emit('update:selectedKeys', val)"
       @submit="handleFormSubmit"
