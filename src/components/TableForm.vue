@@ -68,13 +68,17 @@ const props = defineProps({
     type: Object as PropType<TableConfig>,
     default: () => ({}),
   },
+  submit:{
+    type: Function as PropType<((item:{mode:any,data:any,record:any}) => Promise<any>)>,
+    default:()=>{}
+  }
 });
 
 // Emits 定义
 const emit = defineEmits([
   "update:visible", // 更新弹窗显示状态
   "update:selectedKeys", // 更新选中的行
-  "submit", // 提交表单数据
+  //"submit", // 提交表单数据
   "success", // 提交成功
   "error", // 提交失败
 ]);
@@ -189,6 +193,14 @@ const getFieldAttrs = (field: TableColumn) => {
       `请${formConfig.type === "select" ? "选择" : "输入"}${field.title}`,
   };
 };
+// 获取表单控件的属性
+const getFormItemAttrs = (field: TableColumn) => {
+  const formConfig = field.form;
+  if (!formConfig || !formConfig.formItemAttrs) return {};
+  return {
+    ...formConfig.formItemAttrs
+  };
+};
 /**
  * 检查一个值是否为空。
  *
@@ -286,7 +298,7 @@ const onOkBefore = () => {
   return true;
 };
 // 提交表单
-const handleSubmit = () => {
+const handleSubmit = async () => {
   state.formLoading = true;
 
   try {
@@ -302,12 +314,11 @@ const handleSubmit = () => {
     }
 
     // 触发提交事件，让父组件处理 API 调用
-    emit("submit", {
+    await props.submit({
       mode: props.mode,
       data: submitData,
       record: props.record,
-    });
-
+    })
     // 模拟 API 调用（可由父组件自定义）
     if (props.apiConfig.url) {
       // 这里应该由父组件通过事件处理 API 调用
@@ -315,9 +326,11 @@ const handleSubmit = () => {
 
       emit("success", submitData);
       handleCancel();
+    }else{
+      handleCancel();
     }
   } catch (error: any) {
-    Message.error(error.message || "提交失败");
+    Message.error((typeof error === 'string'?error: error.message) || "提交失败");
     emit("error", error);
   } finally {
     state.formLoading = false;
@@ -334,8 +347,19 @@ const handleCancel = () => {
     if (refComp && refComp.clearSelectedKeys) {
       refComp.clearSelectedKeys();
     }
+    let fieldRefMapElement = state.fieldRefMap[key];
+    if(fieldRefMapElement && fieldRefMapElement.clearSelectedKeys){
+      fieldRefMapElement.clearSelectedKeys();
+    }
+  });
+  Object.keys(state.fieldRefMap).forEach((key) => {
+    let fieldRefMapElement = state.fieldRefMap[key];
+    if(fieldRefMapElement && fieldRefMapElement.clearSelectedKeys){
+      fieldRefMapElement.clearSelectedKeys();
+    }
   });
 };
+
 
 // 监听 visible 和 record 变化
 onMounted(() => {
@@ -393,7 +417,6 @@ defineExpose({
     :title="
       mode === 'create' ? '新增记录' : mode === 'readonly' ? '查看详情' : '编辑记录'
     "
-    @update:visible="(val) => $emit('update:visible', val)"
     :ok-text="mode === 'readonly' ? '关闭' : '确定'"
     @ok="handleSubmit"
     :on-before-ok="onOkBefore"
@@ -446,6 +469,7 @@ defineExpose({
             :is-field-disabled="isFieldDisabled"
             :get-options="getOptions"
             :get-field-attrs="getFieldAttrs"
+            :get-form-item-attrs="getFormItemAttrs"
             :model-value="state.formData[field.dataIndex]"
             @update:model-value="(val: any) => (state.formData[field.dataIndex] = val)"
             :selectedKeys="props.selectedKeys"

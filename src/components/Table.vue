@@ -916,8 +916,8 @@ const handleFormSubmit = async (formData: any) => {
       record: formData.record,
     });
     await fetchData();
-    return;
   }
+
   // emit("form-submit", {
   //   config: JSON.parse(JSON.stringify(props.config)),
   //   mode: formData.mode,
@@ -1561,7 +1561,7 @@ defineExpose({
     <TableForm
       :ref="(ref) => (tableFormRef = ref)"
       v-if="config.showForm"
-      :visible="state.formVisible"
+      v-model:visible="state.formVisible"
       :modalWidth="config.modalWidth"
       :mode="state.formMode"
       :formLayout="config.formLayout || 'horizontal'"
@@ -1574,7 +1574,7 @@ defineExpose({
       :selected-keys="[...props.selectedKeys]"
       @update:visible="formModalChangeVisible"
       @update:selected-keys="(val) => emit('update:selectedKeys', val)"
-      @submit="handleFormSubmit"
+      :submit="handleFormSubmit"
       @success="handleFormSuccess"
     >
       <template v-for="fm in formColumns" #[fm?.form?.slotName]="slotProps">

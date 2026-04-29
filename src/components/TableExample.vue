@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
-import { reactive, ref, computed, watch } from "vue";
-import { Message } from "@arco-design/web-vue";
+import {computed, reactive, ref, watch} from "vue";
+import {Message} from "@arco-design/web-vue";
 import TableConfigEditor from "./TableConfigEditor.vue";
 import SuperTable from "./Table.vue";
-import { del, post, put } from "../request";
-import type { TableConfig, TableAction, SearchField } from "@/types";
+import {del, post, put} from "../request";
+import type {SearchField, TableAction, TableConfig} from "@/types";
 
 const tableRef = ref<any>(null);
 // 表格加载状态
@@ -222,7 +222,7 @@ const tableConfig = reactive<TableConfig>({
         type: "number",
         creatable: true,
         editable: true,
-        required: true,
+        required: false,
         placeholder: "请输入薪资",
         enterNext: "email", // 回车聚焦到邮箱字段
         attrs: {
@@ -315,6 +315,34 @@ const tableConfig = reactive<TableConfig>({
         oneRow: false,
         placeholder: "我是个插槽",
         enterNext: "remark", // 回车聚焦到电话字段
+      },
+    },
+    {
+      title: "附件",
+      dataIndex: "attachement",
+      width: 160,
+      visible: true,
+      ellipsis: true,
+      sortable: {
+        compare: (a: any, b: any) => a.localeCompare(b),
+      },
+      form: {
+        uploadUrl:"/api/files/upload",
+        type: "file",
+        // slotName: "phone-input",
+        creatable: true,
+        columns: 1, // 占两列
+        editable: true,
+        required: true,
+        oneRow: false,
+        placeholder: "我是个插槽",
+        enterNext: "remark", // 回车聚焦到电话字段
+        uploadPathWriteBack: (res:any)=>{
+          console.log('res222--->',res)
+          Message.success("上传成功"+res.response.data.path);
+          return res.response.data.path;
+        }
+
       },
     },
     {
@@ -813,6 +841,7 @@ const tableConfig = reactive<TableConfig>({
           [config?.rowKey || "key"]: String(Date.now() + Math.random()),
           ...data,
         });
+        return Promise.reject("错误。。。。");
       } else {
         await post(config.formAddApiUrl || "", {
           employeesDtos: [data],

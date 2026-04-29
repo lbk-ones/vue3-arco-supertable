@@ -35,6 +35,11 @@ const props = defineProps({
     type: Function as PropType<(field: TableColumn) => any>,
     required: true,
   },
+  // 获取表单项目属性的方法
+  getFormItemAttrs: {
+    type: Function as PropType<(field: TableColumn) => any>,
+    required: true,
+  },
   // 字段值更新回调
   modelValue: {
     type: [String, Number, Boolean, Array, Object, Date] as PropType<any>,
@@ -62,6 +67,7 @@ const props = defineProps({
   },
 });
 const formSelectedKeys = reactive<Record<string, any[]>>({});
+const fileList = ref<any[]>([])
 const popupVisible = ref(false);
 const emit = defineEmits(["update:modelValue", "update:selectedKeys"]);
 
@@ -132,8 +138,11 @@ const handleUpdate = (value: any) => {
   emit("update:modelValue", value);
 };
 const clearSelectedKeys = () => {
-  if (props?.field?.form?.type === "table") {
+  if (props?.field?.form?.type === "table" && (formSelectedKeys[props.field.dataIndex]?.length ?? 0) > 0) {
     formSelectedKeys[props.field.dataIndex] = [];
+  }
+  if (props?.field?.form?.type === "file" && fileList.value.length>0) {
+    fileList.value = []
   }
 };
 
@@ -182,6 +191,27 @@ const focus = () => {
     }
   }
 };
+
+
+const handlerUploadSuccess = (res:any)=> {
+  let returnPath = props.field.form?.uploadPathWriteBack?.(res);
+  if(returnPath){
+    emit("update:modelValue", returnPath);
+  }
+}
+const handlerRemove = (item:any)=> {
+  let value = fileList.value;
+  let filter = value.filter(e=>e.uid!=item.uid);
+  fileList.value = filter
+  if(filter.length>0){
+    emit("update:modelValue",  props.field.form?.uploadPathWriteBack?.(fileList.value[fileList.value.length-1]));
+  }else{
+    emit("update:modelValue", "");
+  }
+  // if(returnPath){
+  //   emit("update:modelValue", returnPath);
+  // }
+}
 defineExpose({
   clearSelectedKeys,
   focus,
@@ -201,6 +231,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-input
       :ref="(ref: any) => (dom = ref)"
@@ -220,6 +252,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-input-number
       :ref="(ref: any) => (dom = ref)"
@@ -239,6 +273,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-textarea
       :ref="(ref: any) => (dom = ref)"
@@ -255,6 +291,10 @@ defineExpose({
     v-else-if="props?.field?.form?.type === 'checkbox'"
     :field="props.field.dataIndex"
     :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-checkbox-group
       :model-value="props.formData[props.field.dataIndex]"
@@ -283,6 +323,10 @@ defineExpose({
     v-else-if="props?.field?.form?.type === 'radio'"
     :field="props.field.dataIndex"
     :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-radio-group
       :model-value="props.formData[props.field.dataIndex]"
@@ -313,6 +357,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-select
       :ref="(ref: any) => (dom = ref)"
@@ -323,6 +369,7 @@ defineExpose({
       :disabled="props.isFieldDisabled(props.field)"
       v-bind="props.getFieldAttrs(props.field)"
       v-on="props.getFieldAttrs(props.field)"
+
     >
       <a-option
         v-for="option in getOptions(props.field)"
@@ -346,6 +393,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-date-picker
       :ref="(ref: any) => (dom = ref)"
@@ -367,6 +416,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-time-picker
       :ref="(ref: any) => (dom = ref)"
@@ -387,6 +438,8 @@ defineExpose({
     :label="props.field.title"
     :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
     :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-date-picker
       :ref="(ref: any) => (dom = ref)"
@@ -407,6 +460,10 @@ defineExpose({
     v-else-if="props?.field?.form?.type === 'switch'"
     :field="props.field.dataIndex"
     :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-switch
       :model-value="props.formData[props.field.dataIndex]"
@@ -422,6 +479,10 @@ defineExpose({
     v-else-if="props?.field?.form?.type === 'slider'"
     :field="props.field.dataIndex"
     :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <a-slider
       :model-value="props.formData[props.field.dataIndex]"
@@ -432,11 +493,40 @@ defineExpose({
     />
   </a-form-item>
 
+  <!--文件上传-->
+  <a-form-item
+      v-else-if="props?.field?.form?.type === 'file'"
+      :field="props.field.dataIndex"
+      :label="props.field.title"
+      :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+      :help="formErrors[props.field.dataIndex]"
+      :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+      v-bind="props.getFormItemAttrs(props.field)"
+  >
+
+    <a-upload
+        v-model:file-list="fileList"
+        :action="props?.field?.form?.uploadUrl"
+        :disabled="props.isFieldDisabled(props.field)"
+        :data="{businessKey:'xx',instanceId:'xx',description:'这是测试'}"
+        @success="handlerUploadSuccess"
+        :on-before-remove="handlerRemove"
+        :show-file-list="true"
+        v-bind="props.getFieldAttrs(props.field)"
+        v-on="props.getFieldAttrs(props.field)"
+
+    />
+  </a-form-item>
+
   <!-- 动态插槽 -->
   <a-form-item
     v-else-if="props?.field?.form?.type === 'slot' && props.field.form.slotName"
     :field="props.field.dataIndex"
     :label="props.field.title"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <slot
       :name="props.field.form.slotName"
@@ -459,6 +549,10 @@ defineExpose({
     :field="props.field.dataIndex"
     :label="props.field.title"
     class="table-form-item"
+    :validate-status="formErrors[props.field.dataIndex] ? 'error' : ''"
+    :help="formErrors[props.field.dataIndex]"
+    :rules="[{required:props.field?.form?.required === true,message:formErrors[props.field.dataIndex]}]"
+    v-bind="props.getFormItemAttrs(props.field)"
   >
     <SuperTable
       :isFormItem="true"
@@ -468,9 +562,9 @@ defineExpose({
         handleFormSubmit: handleFormSubmit,
         executeAction: async (action: any, records: any) => {
           if (action.key == 'delete') {
-            let datas = props.formData[props.field.dataIndex];
-            datas.splice(records._rowIndex, 1);
-            handleUpdate(datas);
+            let datas_ = props.formData[props.field.dataIndex];
+            datas_.splice(records._rowIndex, 1);
+            handleUpdate(datas_);
           }
         },
       } as TableConfig"

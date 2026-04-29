@@ -49,7 +49,7 @@ export interface TableColumn {
     // 存储用的临时字段
     _storedVisible?: boolean;
     form?: {
-        type?: 'input' | 'select' | 'number' | 'date' | 'radio' | 'switch' | 'textarea' | 'slot' | 'table' | 'hidden' | 'slider' | 'time' | 'datetime' | 'checkbox';
+        type?: 'input' | 'select' | 'number' | 'date' | 'radio' | 'switch' | 'textarea' | 'slot' | 'table' | 'hidden' | 'slider' | 'time' | 'datetime' | 'checkbox' | 'file';
         creatable?: boolean;
         editable?: boolean;
         required?: boolean;
@@ -65,6 +65,8 @@ export interface TableColumn {
         tableConfig?: TableConfig; // 嵌套的表格配置
         defaultValue?: any;
         enterFunction?: (field: TableColumn, formData: any) => void;
+        formItemAttrs?: Record<string, any>;
+        uploadPathWriteBack?: (res:any) => string; // 文件上传回写函数回写的值会被写进表单参数里面去
         [key: string]: any;
     };
     [key: string]: any;
