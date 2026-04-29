@@ -841,7 +841,7 @@ const tableConfig = reactive<TableConfig>({
           [config?.rowKey || "key"]: String(Date.now() + Math.random()),
           ...data,
         });
-        return Promise.reject("错误。。。。");
+        //return Promise.reject("错误。。。。");
       } else {
         await post(config.formAddApiUrl || "", {
           employeesDtos: [data],

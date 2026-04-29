@@ -513,6 +513,7 @@ defineExpose({
           :is-field-disabled="isFieldDisabled"
           :get-options="getOptions"
           :get-field-attrs="getFieldAttrs"
+          :get-form-item-attrs="getFormItemAttrs"
           :model-value="state.formData[field.dataIndex]"
           @update:model-value="(val: any) => (state.formData[field.dataIndex] = val)"
           :selectedKeys="props.selectedKeys"
