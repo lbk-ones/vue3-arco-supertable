@@ -327,7 +327,6 @@ const tableConfig = reactive<TableConfig>({
         compare: (a: any, b: any) => a.localeCompare(b),
       },
       form: {
-        uploadUrl:"/api/files/upload",
         type: "file",
         // slotName: "phone-input",
         creatable: true,
@@ -337,10 +336,22 @@ const tableConfig = reactive<TableConfig>({
         oneRow: false,
         placeholder: "我是个插槽",
         enterNext: "remark", // 回车聚焦到电话字段
+        uploadUrl:"/api/files/upload",
         uploadPathWriteBack: (res:any)=>{
           console.log('res222--->',res)
           Message.success("上传成功"+res.response.data.path);
           return res.response.data.path;
+        },
+        attrs:{
+          data:(file:any,form:any,field:any)=>{
+            console.log('file',file)
+            console.log('form',form)
+            console.log('field',field)
+            return {
+              businessKey:'xxx',
+              instanceId:'xxx2'
+            }
+          }
         }
 
       },

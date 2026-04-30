@@ -211,24 +211,27 @@
 
 #### 表单配置 (columns[].form)
 
-| 参数 | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `type` | `String` | `'input'` | 控件类型：`'input'`, `'select'`, `'number'`, `'date'`, `'radio'`, `'switch'`, `'textarea'`, `'slot'`, `'table'` |
-| `slotName` | `String` | - | 自定义表单项插槽名 （当 `type` 为 `'slot'` 时必填）   |
-| `creatable` | `Boolean` | `true` | 新增时是否显示 |
-| `editable` | `Boolean` | `true` | 编辑时是否显示 |
-| `required` | `Boolean` | `false` | 是否必填 |
-| `placeholder` | `String` | - | 占位符 |
-| `enterNext` | `String` | - | 回车后跳转到的下一个字段名 |
-| `oneRow` | `Boolean` | `false` | 表单是否独占一行 |
-| `columns` | `Number` | `0` | 表单项所占列数，`0` 代表不生效 |
-| `defaultValue` | `*` | - | 默认值 |
-| `disabled` | `Boolean \| Function` | - | 是否禁用，支持函数 `(formData, field) => boolean` |
-| `validator` | `Function` | - | 自定义校验函数 `(value, field, mode) => string` |
-| `options` | `Array \| Function` | - | 选项数组（用于 `select`, `radio`, `checkbox`） |
-| `tableConfig` | `Object` | - | 子表格配置（当 `type` 为 `'table'` 时生效），结构同根配置 |
-| `enterFunction` | `Function` | - | 回车后触发的函数 `(field, formData) => void` |
-| `attrs` | `Object` | `{}` | 透传给 Arco 组件的属性或事件 |
+| 参数                    | 类型 | 默认值                                                                      | 说明                                                                                                                   |
+|:----------------------| :--- |:-------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------|
+| `type`                | `String` | `'input'`                                                                | 控件类型：`'input'`, `'select'`, `'number'`, `'date'`, `'radio'`, `'switch'`, `'textarea'`, `'slot'`, `'table'`, `'file'` |
+| `slotName`            | `String` | -                                                                        | 自定义表单项插槽名 （当 `type` 为 `'slot'` 时必填）                                                                                  |
+| `creatable`           | `Boolean` | `true`                                                                   | 新增时是否显示                                                                                                              |
+| `editable`            | `Boolean` | `true`                                                                   | 编辑时是否显示                                                                                                              |
+| `required`            | `Boolean` | `false`                                                                  | 是否必填                                                                                                                 |
+| `placeholder`         | `String` | -                                                                        | 占位符                                                                                                                  |
+| `enterNext`           | `String` | -                                                                        | 回车后跳转到的下一个字段名                                                                                                        |
+| `oneRow`              | `Boolean` | `false`                                                                  | 表单是否独占一行                                                                                                             |
+| `columns`             | `Number` | `0`                                                                      | 表单项所占列数，`0` 代表不生效                                                                                                    |
+| `defaultValue`        | `*` | -                                                                        | 默认值                                                                                                                  |
+| `disabled`            | `Boolean \| Function` | -                                                                        | 是否禁用，支持函数 `(formData, field) => boolean`                                                                             |
+| `validator`           | `Function` | -                                                                        | 自定义校验函数 `(value, field, mode) => string`                                                                             |
+| `options`             | `Array \| Function` | -                                                                        | 选项数组（用于 `select`, `radio`, `checkbox`）                                                                               |
+| `tableConfig`         | `Object` | -                                                                        | 子表格配置（当 `type` 为 `'table'` 时生效），结构同根配置                                                                               |
+| `enterFunction`       | `Function` | -                                                                        | 回车后触发的函数 `(field, formData) => void`                                                                                 |
+| `uploadUrl`           | `String` | -                                                                        | `type=='file'的时候上传地址`                                                                                                |
+| `uploadPathWriteBack` | `String` | -                                                                        | `从上传成功的接口返回值里回写路径到表单的这个属性里面去`                                                                                        |
+| `attrs`               | `Object` | `{}`                                                                     | 透传给 Arco 组件的属性或事件                                                                                                    |
+| `attrs.data`          | `Function` | `(item:FileItem,formData:any,field:TableColumn)=>Record<string, string>` | type=='file'获取文件上传接口所携带参数                                                                                                        |
 ### 示例
 
 ```javascript

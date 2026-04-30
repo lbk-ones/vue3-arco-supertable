@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import SuperTable from "./Table.vue";
-import { onMounted, reactive, ref, type PropType } from "vue";
+import { onMounted, reactive,toRaw, ref, type PropType } from "vue";
 import type { TableColumn, TableConfig, SearchOption } from '@/types';
 
 // Props 定义
@@ -197,6 +197,15 @@ const handlerUploadSuccess = (res:any)=> {
   let returnPath = props.field.form?.uploadPathWriteBack?.(res);
   if(returnPath){
     emit("update:modelValue", returnPath);
+  }
+}
+const uploadData = (item:any)=>{
+  let data = props?.field?.form?.attrs?.data ?? {};
+  let formData = props.formData;
+  if(typeof data === 'function'){
+    return data(toRaw(item),toRaw(formData),toRaw(props?.field))
+  }else{
+    return data;
   }
 }
 const handlerRemove = (item:any)=> {
@@ -508,12 +517,12 @@ defineExpose({
         v-model:file-list="fileList"
         :action="props?.field?.form?.uploadUrl"
         :disabled="props.isFieldDisabled(props.field)"
-        :data="{businessKey:'xx',instanceId:'xx',description:'这是测试'}"
         @success="handlerUploadSuccess"
         :on-before-remove="handlerRemove"
         :show-file-list="true"
         v-bind="props.getFieldAttrs(props.field)"
         v-on="props.getFieldAttrs(props.field)"
+        :data="uploadData"
 
     />
   </a-form-item>
