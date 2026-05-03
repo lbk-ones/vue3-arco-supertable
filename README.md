@@ -195,19 +195,20 @@
 
 #### 基础配置
 
-| 参数 | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `title` | `String` | - | 列标题 |
-| `dataIndex` | `String` | - | 数据字段名 |
-| `width` | `Number` | - | 列宽 |
-| `visible` | `Boolean` | `true` | 默认是否显示 |
-| `fixed` | `String` | - | 固定列 `'left' \| 'right'` |
-| `align` | `String` | `'left'` | 对齐方式 `'left' \| 'right' \| 'center'` |
-| `ellipsis` | `Boolean` | - | 超出省略 |
-| `sortable` | `Object` | - | 排序配置，如 `{ compare: (a, b) => ... }` |
-| `slotName` | `String` | - | 自定义单元格插槽名（可选） |
+| 参数 | 类型 | 默认值 | 说明                                         |
+| :--- | :--- | :--- |:-------------------------------------------|
+| `title` | `String` | - | 列标题                                        |
+| `dataIndex` | `String` | - | 数据字段名                                      |
+| `displayIndex` | `String` | - | 优先显示的数据字段名                                 |
+| `width` | `Number` | - | 列宽                                         |
+| `visible` | `Boolean` | `true` | 默认是否显示                                     |
+| `fixed` | `String` | - | 固定列 `'left' \| 'right'`                    |
+| `align` | `String` | `'left'` | 对齐方式 `'left' \| 'right' \| 'center'`       |
+| `ellipsis` | `Boolean` | - | 超出省略                                       |
+| `sortable` | `Object` | - | 排序配置，如 `{ compare: (a, b) => ... }`        |
+| `slotName` | `String` | - | 自定义单元格插槽名（可选）                              |
 | `statusMap` | `Object` | - | 状态映射配置，仅当 `slotName` 为 `'status-cell'` 时生效 |
-| `form` | `Object` | - | 表单配置对象（见下表） |
+| `form` | `Object` | - | 表单配置对象（见下表）                                |
 
 #### 表单配置 (columns[].form)
 

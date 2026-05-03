@@ -17,6 +17,7 @@ const tableData = ref<any[]>([
   {
     id: "1",
     name: "Jane Doe",
+    name2: "Jane Doessss",
     department: "技术部",
     salary: 23000,
     email: "jane.doe@example.com",
@@ -167,6 +168,7 @@ const tableConfig = reactive<TableConfig>({
     {
       title: "姓名",
       dataIndex: "name",
+      displayIndex: "name2",
       width: 160,
       visible: true,
       ellipsis: true,

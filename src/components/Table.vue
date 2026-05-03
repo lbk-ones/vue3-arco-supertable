@@ -347,10 +347,20 @@ const updateStateColumns = (columns: TableColumn[]) => {
       dataIndex: col.dataIndex,
       title: col.title,
     });
-
+    // 字段优先级显示
+    if(!col.render && !col.slotName && !["_rowIndex","isEnabled","operations"].includes(col.dataIndex)){
+      col.render = (data:any) => {
+        if(data.column.displayIndex && data.record[data.column.displayIndex]){
+          return data.record[data.column.displayIndex];
+        }else{
+          return data.record[data.column.dataIndex];
+        }
+      }
+    }
     if (!col.slotName) {
       col.slotName = `${col.dataIndex}-cell`;
     }
+
     // 初始化 fixed 属性，如果没有则默认为 false (即不固定)
     if (!col.fixed) {
       col.fixed = false;

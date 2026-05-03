@@ -29,6 +29,7 @@ export interface SuperTableProps {
 // 表格列配置类型
 export interface TableColumn {
     dataIndex: string;
+    displayIndex?: string;
     title: string;
     key?: string;
     width?: number;
