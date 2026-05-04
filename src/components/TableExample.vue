@@ -904,7 +904,7 @@ const openCreateFormCallback = ()=>{
     tableRef.value?.setFormData("name","ss")
   },200)
 }
-const searchDefaultValue:Record<any, any> = {name:'xxxx'}
+const searchDefaultValue:Record<any, any> = {}
 // 事件处理
 watch(
   () => selectedKeys.value,

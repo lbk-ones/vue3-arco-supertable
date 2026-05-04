@@ -11,7 +11,7 @@ import {
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 import TableInfo from "./TableInfo.vue";
-import {TableConfig, TableColumn, TableAction, SearchField, Callback, TableInstance, TableFormInstance} from "@/types";
+import {TableConfig, TableColumn, TableAction, SearchField, Callback, TableInstance} from "@/types";
 
 // Props 定义
 const props = defineProps({
@@ -1565,7 +1565,7 @@ defineExpose<TableInstance>({
     <a-modal
       :visible="state.viewListVisible"
       :title="state.viewListMode === 'edit' ? '选择要编辑的记录' : '选择要查看的记录'"
-      @update:visible="(val) => (state.viewListVisible = val)"
+      @update:visible="(val:boolean) => (state.viewListVisible = val)"
       :ok-text="undefined"
       :cancel-text="undefined"
       hide-cancel

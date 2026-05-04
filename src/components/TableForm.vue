@@ -483,7 +483,7 @@ defineExpose<TableFormInstance>({
             :on-enter-next="handleEnterNext"
             :supportEnterTypes="supportEnterTypes"
           >
-            <template #[field.form!.slotName]="slotProps" v-if="field.form?.slotName">
+            <template #[field.form!.slotName]="slotProps:any" v-if="field.form?.slotName">
               <slot :name="field.form!.slotName" v-bind="slotProps"></slot>
             </template>
           </table-form-field-item>
@@ -527,7 +527,7 @@ defineExpose<TableFormInstance>({
           :on-enter-next="handleEnterNext"
           :supportEnterTypes="supportEnterTypes"
         >
-          <template #[field.form!.slotName]="slotProps" v-if="field.form?.slotName">
+          <template #[field.form!.slotName]="slotProps:any" v-if="field.form?.slotName">
             <slot :name="field.form!.slotName" v-bind="slotProps"></slot>
           </template>
         </table-form-field-item>
