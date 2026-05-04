@@ -6,12 +6,12 @@ import {
   onMounted,
   watch,
   ref,
-  type PropType,
+  type PropType, shallowRef,
 } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
 import TableInfo from "./TableInfo.vue";
-import type { TableConfig, TableColumn, TableAction, SearchField } from "@/types";
+import {TableConfig, TableColumn, TableAction, SearchField, Callback, TableInstance, TableFormInstance} from "@/types";
 
 // Props 定义
 const props = defineProps({
@@ -151,6 +151,16 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // 打开创建弹窗
+  openCreateFormCallback: {
+    type: Function as PropType<Callback>,
+    default: async () => {}
+  },
+  // 搜索的默认值
+  searchDefaultValues:{
+    type: Object as PropType<Record<any,any>>,
+    default: () => ({})
+  }
 });
 
 // Emits 定义
@@ -159,10 +169,9 @@ const emit = defineEmits([
   "update:data", // 表格数据集合变化
   "update:loading", // 表格数据集合变化
 ]);
-
 // 状态管理
 const state = reactive({
-  searchValues: {} as Record<string, any>, // 搜索值对象
+  searchValues: {} as Record<any, any>, // 搜索值对象
   currentPage: 1,
   pageSize: props.config.pageSize || 10,
   columnConfig: [] as TableColumn[], // 当前列配置
@@ -184,11 +193,24 @@ const state = reactive({
   contextMenuPosition: { x: 0, y: 0 }, // 右键菜单位置
   contextMenuRecord: null as any, // 右键点击的行数据
 });
+if(props.searchDefaultValues){
+  const normalizedSearchDefaults = Object.fromEntries(
+    Object.entries(props.searchDefaultValues).filter(([, value]) => {
+      if (value === null || value === undefined || value === "") return false;
+      return !(Array.isArray(value) && value.length === 0);
+    })
+  );
+  if (Object.keys(normalizedSearchDefaults).length > 0) {
+    state.searchValues = {...state.searchValues,...normalizedSearchDefaults};
+  }
+}
+
 
 const visibleTableInfo = ref(false); // 表格信息弹窗
+// 表格弹窗表单引用
+const tableFormRef = shallowRef<InstanceType<typeof TableForm> | null>(null);
 
-// 表格表单引用
-const tableFormRef = ref<any>(null);
+
 
 // 环境检查
 const isBrowser = typeof window !== "undefined";
@@ -877,10 +899,14 @@ onMounted(() => {
   fetchData();
 });
 // 打开新增表单
-const openCreateForm = () => {
+const openCreateForm = async () => {
+  if(props.openCreateFormCallback){
+    await props.openCreateFormCallback();
+  }
   state.formMode = "create";
   state.formRecord = null;
   state.formVisible = true;
+
 };
 
 // 打开编辑表单
@@ -977,16 +1003,26 @@ const columnMapTransfer = (column: any, fieldName: string) => {
   }
   return {};
 }
-defineExpose({
+const setSearchFieldValue = (dataIndex:string,value:any)=>{
+  state.searchValues[dataIndex] = value
+}
+defineExpose<TableInstance>({
+  // 刷新数据
   fetchData,
+  // 关闭表单弹窗
   closeForm: () => tableFormRef.value?.closeForm?.(),
+  // 手动获取表单
   getFormData: () => tableFormRef.value?.getFormData?.(),
-  // 提交表单
+  // 手动提交表单
   handleSubmit: () => tableFormRef.value?.handleSubmit?.(),
-  // 初始化表单数据
+  // 手动初始化表单数据
   initializeFormData: () => tableFormRef.value?.initializeFormData?.(),
-  // 初始化表格列配置
+  // 手动初始化表格列配置
   initializeColumns: () => initializeColumns(),
+  // 手动给搜索框设置默认值
+  setSearchFieldValue,
+  // 手动给表单赋值
+  setFormData:(dataIndex:string,value:any) => tableFormRef.value?.setFormData?.(dataIndex,value),
 });
 </script>
 
@@ -1569,7 +1605,7 @@ defineExpose({
 
     <!-- 表单弹窗 -->
     <TableForm
-      :ref="(ref) => (tableFormRef = ref)"
+      ref="tableFormRef"
       v-if="config.showForm"
       v-model:visible="state.formVisible"
       :modalWidth="config.modalWidth"

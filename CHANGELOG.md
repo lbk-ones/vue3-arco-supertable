@@ -1,0 +1,10 @@
+
+# v1.0.4
+column新增displayIndex属性
+新增upload文件上传类型组件
+
+# v1.0.5
+新增openCreateFormCallback回调
+新增Table实例方法setSearchFieldValue用来给搜索项目赋初值
+新增属性searchDefaultValues来初始化搜索项目的值
+新增Table实例方法setFormData用来手动给表单弹窗的控件赋值，可能需要setTimeOut才会生效

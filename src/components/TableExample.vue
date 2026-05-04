@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import VueJsonPretty from "vue-json-pretty";
 import "vue-json-pretty/lib/styles.css";
-import {computed, reactive, ref, watch} from "vue";
+import {computed, reactive, ref, shallowRef, watch} from "vue";
 import {Message} from "@arco-design/web-vue";
 import TableConfigEditor from "./TableConfigEditor.vue";
 import SuperTable from "./Table.vue";
 import {del, post, put} from "../request";
 import type {SearchField, TableAction, TableConfig} from "@/types";
 
-const tableRef = ref<any>(null);
+const tableRef = shallowRef<InstanceType<typeof SuperTable> | null>(null);
 // 表格加载状态
 const loading = ref(false);
 const rowKeyName = "id"; // 行唯一标识字段名
@@ -898,7 +898,13 @@ const tableConfig = reactive<TableConfig>({
 });
 
 const selectedKeys = ref<any[]>([]);
-
+const openCreateFormCallback = ()=>{
+  console.log('openCreateFormCallback')
+  setTimeout(()=>{
+    tableRef.value?.setFormData("name","ss")
+  },200)
+}
+const searchDefaultValue:Record<any, any> = {name:'xxxx'}
 // 事件处理
 watch(
   () => selectedKeys.value,
@@ -982,6 +988,8 @@ const handleAddPhone = () => {
           :ref="(ref: any) => (tableRef = ref)"
           v-model:loading="loading"
           v-model:selectedKeys="selectedKeys"
+          :openCreateFormCallback="openCreateFormCallback"
+          :searchDefaultValues="searchDefaultValue"
         >
           <template #table-top>
             <a-alert>这是一个表格上方插槽示例</a-alert>

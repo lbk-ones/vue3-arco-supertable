@@ -1,3 +1,5 @@
+export type Callback = () => Promise<void> | void;
+export type VoidCB = ()=> void;
 // 组件属性类型定义
 export interface SuperTableProps {
     /**
@@ -24,6 +26,30 @@ export interface SuperTableProps {
      * 是否禁用表格 
      */
     tableDisabled?: boolean;
+
+    /**
+     * 打开创建弹窗
+     */
+    openCreateFormCallback?: Callback;
+}
+
+export interface TableFormInstance{
+    initializeFormData:VoidCB,
+    closeForm:VoidCB,
+    getFormData:()=> Record<string, any>,
+    handleSubmit:()=> Promise<any>,
+    setFormData:(dataIndex:string,value:any)=> void,
+}
+
+export interface TableInstance{
+    fetchData:()=>Promise<any>;
+    closeForm:any;
+    getFormData:()=>void;
+    handleSubmit:()=>void;
+    initializeFormData:()=>void;
+    initializeColumns:()=>void;
+    setSearchFieldValue:(dataIndex:string,value:any)=>void;
+    setFormData:(dataIndex:string,value:any)=>void;
 }
 
 // 表格列配置类型

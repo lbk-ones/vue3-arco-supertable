@@ -2,7 +2,7 @@
 import TableFormFieldItem from "./TableFormFieldItem.vue";
 import { reactive, computed, onMounted, watch, nextTick, toRaw, type PropType } from "vue";
 import { Message } from "@arco-design/web-vue";
-import type { TableColumn, TableConfig, SearchOption } from "@/types";
+import type {TableColumn, TableConfig, SearchOption, TableFormInstance} from "@/types";
 
 // Props 定义
 const props = defineProps({
@@ -400,14 +400,19 @@ watch(
   },
   { deep: true }
 );
+const setFormData = (dataIndex:string,value:any)=>{
+  state.formData[dataIndex] = value;
+}
 
 // 暴露更新方法给父组件（如果需要手动更新）
-defineExpose({
+defineExpose<TableFormInstance>({
   initializeFormData,
   closeForm: handleCancel,
-  getFormData: () => toRaw(state.formData),
+  getFormData: () => toRaw<Record<string,any>>(state.formData),
   // 提交表单
   handleSubmit,
+  // 手动给表单赋值
+  setFormData
 });
 </script>
 
