@@ -8,3 +8,8 @@ column新增displayIndex属性
 新增Table实例方法setSearchFieldValue用来给搜索项目赋初值
 新增属性searchDefaultValues来初始化搜索项目的值
 新增Table实例方法setFormData用来手动给表单弹窗的控件赋值，可能需要setTimeOut才会生效
+
+# v1.0.6
+新增Table实例方法 getSearchFieldValue 用来获取搜索表单的值
+新增Table实例方法 getStateValue 获取所有state的读副本
+新增onMountedCallback和onUnmountedCallback挂载和卸载回调

@@ -49,6 +49,8 @@ export interface TableInstance{
     initializeFormData:()=>void;
     initializeColumns:()=>void;
     setSearchFieldValue:(dataIndex:string,value:any)=>void;
+    getSearchFieldValue:()=>Record<any, any>;
+    getStateValue:()=>Record<any, any>;
     setFormData:(dataIndex:string,value:any)=>void;
 }
 

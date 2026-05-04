@@ -6,7 +6,7 @@ import {
   onMounted,
   watch,
   ref,
-  type PropType, shallowRef,
+  type PropType, shallowRef, toRaw,
 } from "vue";
 import { Message, Modal } from "@arco-design/web-vue";
 import TableForm from "./TableForm.vue";
@@ -160,6 +160,16 @@ const props = defineProps({
   searchDefaultValues:{
     type: Object as PropType<Record<any,any>>,
     default: () => ({})
+  },
+  // onMounted回调
+  onMountedCallback:{
+    type: Function as PropType<Callback>,
+    default: async () => {}
+  },
+  // onUnmounted回调
+  onUnmountedCallback:{
+    type: Function as PropType<Callback>,
+    default: async () => {}
   }
 });
 
@@ -670,11 +680,13 @@ const handleGlobalContextMenu = (e: MouseEvent) => {
 onMounted(() => {
   window.addEventListener("click", handleGlobalClick);
   window.addEventListener("contextmenu", handleGlobalContextMenu);
+  props.onMountedCallback && props.onMountedCallback()
 });
 
 onUnmounted(() => {
   window.removeEventListener("click", handleGlobalClick);
   window.removeEventListener("contextmenu", handleGlobalContextMenu);
+  props.onUnmountedCallback && props.onUnmountedCallback()
 });
 
 // 获取右键菜单可用的操作
@@ -1021,6 +1033,10 @@ defineExpose<TableInstance>({
   initializeColumns: () => initializeColumns(),
   // 手动给搜索框设置默认值
   setSearchFieldValue,
+  // 获取搜索的值
+  getSearchFieldValue:()=> toRaw(state.searchValues),
+  // 获取所有状态值
+  getStateValue:()=> toRaw(state),
   // 手动给表单赋值
   setFormData:(dataIndex:string,value:any) => tableFormRef.value?.setFormData?.(dataIndex,value),
 });
