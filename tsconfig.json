@@ -16,8 +16,11 @@
     "declarationDir": "./dist/types",
     "emitDeclarationOnly": true,
 
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
     /* Bundler mode */
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

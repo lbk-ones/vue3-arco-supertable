@@ -1,7 +1,7 @@
 {
   "name": "arco-vue3-supertable",
   "private": false,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "一个基于arco的vue3超级表格，基于配置来动态生成表格和表单",
   "keywords": [
     "vue",
@@ -13,15 +13,15 @@
   "main": "./dist/arco-vue3-supertable.umd.js",
   "module": "./dist/arco-vue3-supertable.es.js",
   "type": "module",
+  "types": "./dist/types/arco-vue3-supertable.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/types/vue3-arco-supertable.d.ts",
-      "import": "./dist/vue3-arco-supertable.es.js",
-      "require": "./dist/vue3-arco-supertable.umd.js"
+      "types": "./dist/types/arco-vue3-supertable.d.ts",
+      "import": "./dist/arco-vue3-supertable.es.js",
+      "require": "./dist/arco-vue3-supertable.umd.js"
     },
     "./dist/arco-vue3-supertable.css": "./dist/arco-vue3-supertable.css"
   },
-  "types": "./dist/types/vue3-arco-supertable.d.ts",
   "typesVersions": {
     "*": {
       "*": [

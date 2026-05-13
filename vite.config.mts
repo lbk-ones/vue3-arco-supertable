@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from 'path';
@@ -8,7 +9,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
+    extensions: ['.ts', '.js', '.vue']
   },
+
   server: {
     proxy: {
       "/api": {
@@ -19,28 +22,62 @@ export default defineConfig({
     },
     strictPort: false,
   },
+
   plugins: [
     vue(),
     dts({
       tsconfigPath: './tsconfig.types.json',
       outDir: 'dist/types',
-      insertTypesEntry: true
+      insertTypesEntry: true,
+      rollupTypes: true,
     })
   ],
+
   build: {
     outDir: 'dist',
+
+
     lib: {
-      entry: ['src/vue3-arco-supertable.ts'],
-      name: 'vue3-arco-supertable',
-      fileName: (format) => `vue3-arco-supertable.${format}.js`
-    },
-    rollupOptions: {
-      external: ['vue', '@arco-design/web-vue', 'vue-json-pretty', 'axios'],
-      output: {
-        globals: {
-          vue: 'Vue'
+      entry: path.resolve(__dirname, 'src/arco-vue3-supertable.ts'),
+      name: 'ArcoVue3Supertable',
+      fileName: (format) => {
+        if (format === 'umd') {
+          return 'arco-vue3-supertable.umd.js'
+        } else if (format === 'es') {
+          return 'arco-vue3-supertable.es.js'
         }
+        return 'arco-vue3-supertable.js'
       }
+    },
+
+    rollupOptions: {
+      external: [
+        'vue',
+        '@arco-design/web-vue',
+        'vue-json-pretty',
+        'axios'
+      ],
+
+      // ✅ 完整的输出配置
+      output: [
+        {
+          format: 'umd',
+          name: 'ArcoVue3Supertable',
+          entryFileNames: 'arco-vue3-supertable.umd.js',
+          dir: 'dist',
+          globals: {
+            vue: 'Vue',
+            '@arco-design/web-vue': 'ArcoVue',
+            'vue-json-pretty': 'VueJsonPretty',
+            'axios': 'axios'
+          }
+        },
+        {
+          format: 'es',
+          entryFileNames: 'arco-vue3-supertable.es.js',
+          dir: 'dist'
+        }
+      ]
     }
   }
 });

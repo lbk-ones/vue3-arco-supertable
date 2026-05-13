@@ -13,3 +13,6 @@ column新增displayIndex属性
 新增Table实例方法 getSearchFieldValue 用来获取搜索表单的值
 新增Table实例方法 getStateValue 获取所有state的读副本
 新增onMountedCallback和onUnmountedCallback挂载和卸载回调
+
+# v1.0.7
+调整包结构

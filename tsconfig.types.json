@@ -14,9 +14,10 @@
     "declaration": true,
     "declarationDir": "./dist/types",
     "emitDeclarationOnly": true,
-
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     /* Bundler mode */
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -29,6 +30,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/components/**/*.vue", "src/vue3-arco-supertable.ts","src/types/**/*.ts"],
+  "include": ["src/components/**/*.vue",
+    "src/arco-vue3-supertable.ts","src/types/**/*.ts"],
   "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts","src/components/TableExample.vue","src/components/TableConfigEditor.vue"]
 }
