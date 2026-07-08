@@ -715,7 +715,7 @@ const isDisabled = (field: any, record?: any) => {
   if (!field) return false;
   const disabled = field.disabled;
   if (typeof disabled === "function") {
-    return disabled(field, record);
+    return disabled(field, record,state.formMode);
   }
   return disabled === true;
 };

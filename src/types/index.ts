@@ -1,5 +1,5 @@
 export type Callback = () => Promise<void> | void;
-export type VoidCB = ()=> void;
+export type VoidCB = () => void;
 // 组件属性类型定义
 export interface SuperTableProps {
     /**
@@ -33,25 +33,59 @@ export interface SuperTableProps {
     openCreateFormCallback?: Callback;
 }
 
-export interface TableFormInstance{
-    initializeFormData:VoidCB,
-    closeForm:VoidCB,
-    getFormData:()=> Record<string, any>,
-    handleSubmit:()=> Promise<any>,
-    setFormData:(dataIndex:string,value:any)=> void,
+export interface TableFormInstance {
+    initializeFormData: VoidCB,
+    closeForm: VoidCB,
+    getFormData: () => Record<string, any>,
+    handleSubmit: () => Promise<any>,
+    setFormData: (dataIndex: string, value: any) => void,
 }
 
-export interface TableInstance{
-    fetchData:()=>Promise<any>;
-    closeForm:any;
-    getFormData:()=>void;
-    handleSubmit:()=>void;
-    initializeFormData:()=>void;
-    initializeColumns:()=>void;
-    setSearchFieldValue:(dataIndex:string,value:any)=>void;
-    getSearchFieldValue:()=>Record<any, any>;
-    getStateValue:()=>Record<any, any>;
-    setFormData:(dataIndex:string,value:any)=>void;
+export interface TableInstance {
+    /**
+     * 刷新表格数据
+     */
+    fetchData: () => Promise<any>;
+    /**
+     * 关闭表单
+     */
+    closeForm: () => void;
+    /**
+     * 获取当前新增更新表单数据
+     */
+    getFormData: () => any;
+     /**
+     * 提交新增更新表单数据
+     */
+    handleSubmit: () => any;
+    /**
+     * 初始化表单数据
+     */
+    initializeFormData: () => void;
+    /**
+     * 初始化表格列配置
+     */
+    initializeColumns: () => any;
+    /**
+     * 设置搜索框的值
+     * @param dataIndex 字段名称dataIn dex
+     * @param value 要设置的值
+     */
+    setSearchFieldValue: (dataIndex: string, value: any) => void;
+    /**
+     * 获取搜索项的值对象
+     */
+    getSearchFieldValue: () => Record<any, any>;
+    /**
+     * 获取所有内部状态的值
+     * @returns state
+     */
+    getStateValue: () => Record<any, any>;
+    /**
+     * 手动给弹出表单赋值
+     * @returns state
+     */
+    setFormData: (dataIndex: string, value: any) => void;
 }
 
 // 表格列配置类型
@@ -82,7 +116,7 @@ export interface TableColumn {
         creatable?: boolean;
         editable?: boolean;
         required?: boolean;
-        disabled?: boolean | ((formData: any, field: TableColumn) => boolean);
+        disabled?: boolean | ((formData: any, field: TableColumn,formMode?:string) => boolean);
         placeholder?: string;
         enterNext?: string;
         options?: SearchOption[] | ((formData: any, field: TableColumn) => SearchOption[]);
@@ -95,7 +129,7 @@ export interface TableColumn {
         defaultValue?: any;
         enterFunction?: (field: TableColumn, formData: any) => void;
         formItemAttrs?: Record<string, any>;
-        uploadPathWriteBack?: (res:any) => string; // 文件上传回写函数回写的值会被写进表单参数里面去
+        uploadPathWriteBack?: (res: any) => string; // 文件上传回写函数回写的值会被写进表单参数里面去
         [key: string]: any;
     };
     [key: string]: any;
@@ -110,7 +144,7 @@ export type TableAction = {
     size?: 'mini' | 'small' | 'medium' | 'large';
     message?: string;
     confirmMessage?: string;
-    disabled?: boolean | ((field: any, record: any) => boolean);
+    disabled?: boolean | ((field: any, record: any,formMode: string) => boolean);
     isFetchData?: boolean;
     needSelect?: boolean;
     /**
@@ -142,7 +176,7 @@ export type SearchField = {
 export type SearchOption = {
     label: string;
     value: any;
-    disabled?: boolean | ((formData: any, field: TableColumn) => boolean);
+    disabled?: boolean | ((formData: any, field: TableColumn,formMode:string) => boolean);
 };
 // 表格配置类型
 export interface TableConfig {
@@ -312,35 +346,6 @@ export interface TableConfig {
     }, searchFields?: SearchField[]) => Promise<{ records: any[]; total: number }>;
 
 }
-
-// 组件实例方法类型
-export interface SuperTableInstance {
-    /**
-     * 刷新表格数据
-     */
-    fetchData: () => void;
-    /**
-     * 关闭新增更新表单弹窗
-     */
-    closeForm: () => void;
-    /**
-     * 获取当前新增更新表单数据
-     */
-    getFormData: () => any;
-    /**
-     * 提交新增更新表单数据
-     */
-    handleSubmit: () => any;
-    /**
-     * 初始化表单数据
-     */
-    initializeFormData: () => any;
-    /**
-     * 初始化表格列配置
-     */
-    initializeColumns: () => any;
-}
-
 // 组件事件类型
 export interface SuperTableEvents {
     onSelect?: (selectedRowKeys: any[], selectedRows: any[]) => void;

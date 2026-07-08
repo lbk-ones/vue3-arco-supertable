@@ -224,7 +224,7 @@
 | `oneRow`              | `Boolean` | `false`                                                                  | 表单是否独占一行                                                                                                             |
 | `columns`             | `Number` | `0`                                                                      | 表单项所占列数，`0` 代表不生效                                                                                                    |
 | `defaultValue`        | `*` | -                                                                        | 默认值                                                                                                                  |
-| `disabled`            | `Boolean \| Function` | -                                                                        | 是否禁用，支持函数 `(formData, field) => boolean`                                                                             |
+| `disabled`            | `Boolean \| Function` | -                                                                        | 是否禁用，支持函数 `(formData, field,formMode) => boolean`                                                                             |
 | `validator`           | `Function` | -                                                                        | 自定义校验函数 `(value, field, mode) => string`                                                                             |
 | `options`             | `Array \| Function` | -                                                                        | 选项数组（用于 `select`, `radio`, `checkbox`）                                                                               |
 | `tableConfig`         | `Object` | -                                                                        | 子表格配置（当 `type` 为 `'table'` 时生效），结构同根配置                                                                               |
@@ -266,7 +266,7 @@ columns: [
       enterNext: 'age',     // 回车后跳转到的下一个字段名（提升录入体验）
       oneRow: true,         // 表单是否独占一行
       columns: 0,           // 这个表单项所占列数 0代表不生效
-      disabled: ( formData, field ) => formData.status === 'inactive', // 是否禁用可以是函数返回布尔值也可以直接是布尔值
+      disabled: ( formData, field,formMode ) => formData.status === 'inactive', // 是否禁用可以是函数返回布尔值也可以直接是布尔值
       validator: ( value, field, mode ) => { return '参数不合法' }, // 表单验证的时候使用的校验函数，返回错误信息字符串或空字符串表示通过
       attrs: { },             // 透传给 Arco 组件的属性或者事件
       // type==='select' 或 'radio' 或 'checkbox' 时需要 可以是函数返回数组

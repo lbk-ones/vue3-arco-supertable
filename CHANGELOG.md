@@ -16,3 +16,8 @@ column新增displayIndex属性
 
 # v1.0.7
 调整包结构
+
+# v1.0.8
+改类型
+disabled新增表单类型参数回调
+
