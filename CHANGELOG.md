@@ -21,3 +21,7 @@ column新增displayIndex属性
 改类型
 disabled新增表单类型参数回调
 
+# v1.0.8
+修复表单项disabled函数第三个参数遗漏的问题
+修复表单弹窗弹出之后focus第一个的时候跳过disabled的项
+

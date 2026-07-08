@@ -165,7 +165,7 @@ const isFieldDisabled = (field: TableColumn) => {
   const disabled = formConfig.disabled;
 
   if (typeof disabled === "function") {
-    return disabled(state.formData, field);
+    return disabled(state.formData, field,props.mode);
   }
   return disabled === true;
 };
@@ -386,7 +386,7 @@ watch(
       initializeFormData();
       let fitem =
         availableFields.value?.find((e) => {
-          if (e.form && e.form.type) {
+          if (e.form && e.form.type && !isFieldDisabled(e)) {
             return supportEnterTypes.includes(e.form.type);
           }
           return false;
